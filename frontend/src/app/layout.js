@@ -3,7 +3,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 export const metadata = {
-  title: 'AI Sim - Gợi ý Sim Phong Thủy AI',
+  title: 'MINHTHUSIM - Gợi ý Sim Phong Thủy AI',
   description: 'Hệ thống gợi ý sim số đẹp ứng dụng trí tuệ nhân tạo, tối ưu phong thủy và điểm sở thích cá nhân',
 }
 

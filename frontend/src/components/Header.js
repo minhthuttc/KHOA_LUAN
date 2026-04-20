@@ -7,12 +7,15 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-2">
             <Smartphone className="w-8 h-8 text-primary" />
-            <span className="font-bold text-xl tracking-tight">AI<span className="text-primary">Sim</span></span>
+            <span className="font-bold text-xl tracking-tight">MINTHU<span className="text-primary">SIM</span></span>
           </div>
           <nav className="hidden md:flex space-x-8">
             <a href="#" className="font-medium hover:text-primary transition-colors">Trang chủ</a>
             <a href="#" className="font-medium hover:text-primary transition-colors">Kho số</a>
             <a href="#" className="font-medium hover:text-primary transition-colors">Định giá Sim</a>
+            <a href="#" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</a>
+            <a href="#" className="font-medium hover:text-primary transition-colors">Thu Mua Sim</a>
+            <a href="#" className="font-medium hover:text-primary transition-colors">Xem Đại Cát</a>
             <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
           </nav>
           <div className="flex items-center">
