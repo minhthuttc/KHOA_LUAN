@@ -5,14 +5,23 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white dark:bg-dark border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <svg width="32" height="44" viewBox="0 0 100 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="10" y="5" width="80" height="140" rx="12" fill="currentColor" className="text-primary"/>
-              <rect x="30" y="15" width="40" height="8" rx="4" fill="white"/>
-              <rect x="20" y="30" width="60" height="95" rx="2" fill="white"/>
-              <circle cx="50" cy="135" r="8" fill="white"/>
+          <Link href="/" className="flex items-center gap-3">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Circle outline */}
+              <circle cx="50" cy="50" r="44" stroke="currentColor" strokeWidth="6" fill="none" className="text-primary"/>
+              
+              {/* SIM card with cut corner */}
+              <path d="M30 25 L30 75 L70 75 L70 40 L55 25 Z" fill="currentColor" className="text-primary"/>
+              
+              {/* Chip pattern (white rectangles) */}
+              <rect x="38" y="48" width="8" height="8" fill="white"/>
+              <rect x="48" y="48" width="8" height="8" fill="white"/>
+              <rect x="58" y="48" width="8" height="8" fill="white"/>
+              <rect x="38" y="58" width="8" height="8" fill="white"/>
+              <rect x="48" y="58" width="8" height="8" fill="white"/>
+              <rect x="58" y="58" width="8" height="8" fill="white"/>
             </svg>
-            <span className="font-bold text-xl tracking-tight">MINHTHUSIM</span>
+            <span className="font-bold text-2xl tracking-tight">MINHTHUSIM</span>
           </Link>
           <nav className="hidden md:flex space-x-8">
             <Link href="/" className="font-medium hover:text-primary transition-colors">Trang chủ</Link>
