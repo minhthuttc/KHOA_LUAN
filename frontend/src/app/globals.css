@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #f59e0b; /* Amber/Gold */
-  --color-primary-hover: #d97706;
-  --color-secondary: #3b82f6; /* Blue for tech */
+  --color-primary: #c4a57b; /* Soft Brown */
+  --color-primary-hover: #a88f6b;
+  --color-secondary: #d4b896; /* Light Brown */
   --color-dark: #0f172a;
   --color-dark-lighter: #1e293b;
   --color-background: var(--background);
@@ -61,7 +61,7 @@ html {
 
 /* Gradient text */
 .text-gradient {
-  background: linear-gradient(to right, #f59e0b, #ec4899);
+  background: linear-gradient(to right, #c4a57b, #d4b896);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

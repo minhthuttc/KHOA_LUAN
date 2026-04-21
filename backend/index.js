@@ -115,6 +115,20 @@ app.post('/api/recommend', async (req, res) => {
   }
 });
 
+// API endpoint to get all sims
+app.get('/api/sims', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM sim_cards WHERE status = "Còn hàng" ORDER BY price ASC');
+    res.json({
+      success: true,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error in /api/sims:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);
