@@ -26,7 +26,6 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             <Link href="/" className="font-medium hover:text-primary transition-colors">Trang chủ</Link>
             <Link href="/kho-so" className="font-medium hover:text-primary transition-colors">Kho số</Link>
-            <a href="#" className="font-medium hover:text-primary transition-colors">Định giá Sim</a>
             <a href="#" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</a>
             <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
           </nav>
