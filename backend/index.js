@@ -129,6 +129,95 @@ app.get('/api/sims', async (req, res) => {
   }
 });
 
+// API đăng ký
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    
+    // Kiểm tra tên đã tồn tại
+    const [existing] = await pool.query('SELECT * FROM users WHERE name = ?', [name]);
+    if (existing.length > 0) {
+      return res.status(400).json({ success: false, message: 'Tên đăng nhập đã được sử dụng' });
+    }
+    
+    // Thêm user mới
+    await pool.query(
+      'INSERT INTO users (name, password, role) VALUES (?, ?, ?)',
+      [name, password, 'customer']
+    );
+    
+    res.json({ success: true, message: 'Đăng ký thành công' });
+  } catch (error) {
+    console.error('Error in /api/register:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API đăng nhập
+app.post('/api/login', async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    
+    const [users] = await pool.query('SELECT * FROM users WHERE name = ? AND password = ?', [name, password]);
+    
+    if (users.length === 0) {
+      return res.status(401).json({ success: false, message: 'Tên đăng nhập hoặc mật khẩu không đúng' });
+    }
+    
+    const user = users[0];
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error in /api/login:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy danh sách users (admin only)
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const [users] = await pool.query('SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC');
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('Error in /api/admin/users:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API quản lý sim (admin)
+app.post('/api/admin/sims', async (req, res) => {
+  try {
+    const { sim_number, network, price, category, feng_shui_element, total_nodes } = req.body;
+    
+    await pool.query(
+      'INSERT INTO sim_cards (sim_number, network, price, category, feng_shui_element, total_nodes, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [sim_number, network, price, category, feng_shui_element, total_nodes, 'Còn hàng']
+    );
+    
+    res.json({ success: true, message: 'Thêm sim thành công' });
+  } catch (error) {
+    console.error('Error in /api/admin/sims:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+app.delete('/api/admin/sims/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM sim_cards WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Xóa sim thành công' });
+  } catch (error) {
+    console.error('Error in /api/admin/sims:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);

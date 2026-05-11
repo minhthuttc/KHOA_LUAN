@@ -5,11 +5,14 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
   const [filters, setFilters] = useState({
     network: [],
     simType: [],
-    minPrice: 0,
-    maxPrice: 50000000,
+    minPrice: 500000,
+    maxPrice: 5000000,
     specialNumbers: "",
     anniversaryDate: "",
   });
+
+  const [displayMinPrice, setDisplayMinPrice] = useState("500.000");
+  const [displayMaxPrice, setDisplayMaxPrice] = useState("5.000.000");
 
   const networks = ["Viettel", "Vinaphone", "Mobifone"];
   const simTypes = [
@@ -25,30 +28,75 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
       const updated = current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value];
-      return { ...prev, [category]: updated };
+      const newFilters = { ...prev, [category]: updated };
+      
+      // Tự động áp dụng filter
+      setTimeout(() => onFilterChange(newFilters), 0);
+      return newFilters;
     });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    setFilters((prev) => {
+      const newFilters = { ...prev, [name]: value };
+      
+      // Tự động áp dụng filter cho price và special numbers
+      if (name === 'minPrice' || name === 'maxPrice' || name === 'specialNumbers') {
+        setTimeout(() => onFilterChange(newFilters), 300);
+      }
+      return newFilters;
+    });
+  };
+
+  const handlePriceChange = (e) => {
+    const { name, value } = e.target;
+    // Loại bỏ tất cả ký tự không phải số
+    const numericValue = value.replace(/\D/g, '');
+    const numberValue = numericValue === '' ? 0 : parseInt(numericValue);
+    
+    // Format với dấu chấm phân cách
+    const formattedValue = numericValue === '' ? '' : new Intl.NumberFormat('vi-VN').format(numberValue);
+    
+    if (name === 'minPrice') {
+      setDisplayMinPrice(formattedValue);
+      setFilters((prev) => {
+        const newFilters = { ...prev, minPrice: numberValue };
+        setTimeout(() => onFilterChange(newFilters), 300);
+        return newFilters;
+      });
+    } else if (name === 'maxPrice') {
+      setDisplayMaxPrice(formattedValue);
+      setFilters((prev) => {
+        const newFilters = { ...prev, maxPrice: numberValue };
+        setTimeout(() => onFilterChange(newFilters), 300);
+        return newFilters;
+      });
+    }
   };
 
   const handleApply = () => {
     onFilterChange(filters);
+    // Scroll lên đầu trang
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleReset = () => {
     const resetFilters = {
       network: [],
       simType: [],
-      minPrice: 0,
-      maxPrice: 50000000,
+      minPrice: 500000,
+      maxPrice: 5000000,
       specialNumbers: "",
       anniversaryDate: "",
     };
     setFilters(resetFilters);
+    setDisplayMinPrice("500.000");
+    setDisplayMaxPrice("5.000.000");
     onFilterChange(resetFilters);
+    
+    // Scroll lên đầu trang
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatPrice = (price) => {
@@ -56,7 +104,7 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
   };
 
   return (
-    <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-120px)] overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold flex items-center gap-2 dark:text-white">
           <Filter className="text-primary" />
@@ -120,32 +168,19 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
         {/* Khoảng giá */}
         <div>
           <label className="block text-sm font-semibold mb-3 dark:text-gray-200">
-            Khoảng giá
+            Khoảng giá tối đa
           </label>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                name="minPrice"
-                value={filters.minPrice}
-                onChange={handleChange}
-                placeholder="Từ"
-                className="flex-1 bg-white dark:bg-dark border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <span className="text-gray-500 dark:text-gray-400">-</span>
-              <input
-                type="number"
-                name="maxPrice"
-                value={filters.maxPrice}
-                onChange={handleChange}
-                placeholder="Đến"
-                className="flex-1 bg-white dark:bg-dark border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {formatPrice(filters.minPrice)} đ - {formatPrice(filters.maxPrice)} đ
-            </div>
-          </div>
+          <input
+            type="text"
+            name="maxPrice"
+            value={displayMaxPrice}
+            onChange={handlePriceChange}
+            placeholder="Nhập giá tối đa"
+            className="w-full bg-white dark:bg-dark border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            500.000 đ - 5.000.000 đ
+          </p>
         </div>
 
         {/* Số đặc biệt */}

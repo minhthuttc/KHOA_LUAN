@@ -1,6 +1,25 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { User, LogOut } from "lucide-react";
 
 export default function Header() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.href = "/";
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-dark border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,13 +45,48 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             <Link href="/" className="font-medium hover:text-primary transition-colors">Trang chủ</Link>
             <Link href="/kho-so" className="font-medium hover:text-primary transition-colors">Kho số</Link>
-            <a href="#" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</a>
+            <Link href="/phong-thuy" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</Link>
             <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
           </nav>
-          <div className="flex items-center">
-            <button className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-transform transform hover:scale-105 shadow-lg shadow-primary/30">
-              Tư vấn ngay
-            </button>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <User className="w-4 h-4" />
+                  <span className="font-medium">{user.name}</span>
+                </div>
+                {user.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full font-medium transition"
+                  >
+                    Admin
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Đăng xuất
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="font-medium hover:text-primary transition-colors px-4 py-2"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/register"
+                  className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-transform transform hover:scale-105 shadow-lg shadow-primary/30"
+                >
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

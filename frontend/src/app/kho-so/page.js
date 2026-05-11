@@ -50,16 +50,18 @@ export default function KhoSoPage() {
     if (filterData.simType && filterData.simType.length > 0) {
       filtered = filtered.filter((sim) => {
         const simNumber = sim.sim_number;
+        const category = sim.category ? sim.category.toLowerCase() : "";
+        
         return filterData.simType.some((type) => {
           switch (type) {
             case "tam-hoa":
-              return /(\d)\1{2}/.test(simNumber); // 3 số giống nhau liên tiếp
+              return /(\d)\1{2}/.test(simNumber) || category.includes("tam hoa");
             case "tu-quy":
-              return /(\d)\1{3}/.test(simNumber); // 4 số giống nhau liên tiếp
+              return /(\d)\1{3}/.test(simNumber) || category.includes("tứ quý");
             case "than-tai":
-              return simNumber.includes("39") || simNumber.includes("79");
+              return simNumber.includes("39") || simNumber.includes("79") || category.includes("thần tài");
             case "loc-phat":
-              return simNumber.includes("68") || simNumber.includes("86") || simNumber.includes("78");
+              return simNumber.includes("68") || simNumber.includes("86") || simNumber.includes("78") || category.includes("lộc phát");
             default:
               return false;
           }
@@ -87,12 +89,15 @@ export default function KhoSoPage() {
       const date = new Date(filterData.anniversaryDate);
       const day = String(date.getDate()).padStart(2, "0");
       const month = String(date.getMonth() + 1).padStart(2, "0");
-      const datePattern = `${day}${month}`;
       
-      filtered = filtered.filter((sim) =>
-        sim.sim_number.includes(datePattern) ||
-        sim.sim_number.includes(`${month}${day}`)
-      );
+      // Tìm các pattern: DDMM, MMDD, DDMMYY, DDMMYYYY
+      filtered = filtered.filter((sim) => {
+        const simNum = sim.sim_number;
+        return (
+          simNum.includes(`${day}${month}`) ||
+          simNum.includes(`${month}${day}`)
+        );
+      });
     }
 
     setFilteredSims(filtered);
