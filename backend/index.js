@@ -218,6 +218,66 @@ app.delete('/api/admin/sims/:id', async (req, res) => {
   }
 });
 
+// API mua sim (lưu lịch sử)
+app.post('/api/purchase', async (req, res) => {
+  try {
+    const { user_id, user_name, sim_number, network, price, category } = req.body;
+    
+    await pool.query(
+      'INSERT INTO purchases (user_id, user_name, sim_number, network, price, category) VALUES (?, ?, ?, ?, ?, ?)',
+      [user_id, user_name, sim_number, network, price, category]
+    );
+    
+    res.json({ success: true, message: 'Đã lưu lịch sử mua sim' });
+  } catch (error) {
+    console.error('Error in /api/purchase:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lưu lịch sử xem phong thủy
+app.post('/api/fengshui-history', async (req, res) => {
+  try {
+    const { user_id, user_name, birth_date, birth_time, gender, calendar_type, element, lucky_numbers } = req.body;
+    
+    await pool.query(
+      'INSERT INTO fengshui_history (user_id, user_name, birth_date, birth_time, gender, calendar_type, element, lucky_numbers) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [user_id, user_name, birth_date, birth_time, gender, calendar_type, element, lucky_numbers]
+    );
+    
+    res.json({ success: true, message: 'Đã lưu lịch sử xem phong thủy' });
+  } catch (error) {
+    console.error('Error in /api/fengshui-history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy lịch sử mua sim (admin)
+app.get('/api/admin/purchases', async (req, res) => {
+  try {
+    const [purchases] = await pool.query(
+      'SELECT * FROM purchases ORDER BY purchase_date DESC'
+    );
+    res.json({ success: true, data: purchases });
+  } catch (error) {
+    console.error('Error in /api/admin/purchases:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy lịch sử xem phong thủy (admin)
+app.get('/api/admin/fengshui-history', async (req, res) => {
+  try {
+    const [history] = await pool.query(
+      'SELECT * FROM fengshui_history ORDER BY view_date DESC'
+    );
+    res.json({ success: true, data: history });
+  } catch (error) {
+    console.error('Error in /api/admin/fengshui-history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);

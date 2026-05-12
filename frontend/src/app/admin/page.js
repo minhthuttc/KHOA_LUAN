@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Users, Package, LogOut, Trash2, Plus } from "lucide-react";
+import { Users, Package, Trash2, Plus, ShoppingCart, Sparkles } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [sims, setSims] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+  const [fengshuiHistory, setFengshuiHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("sims");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSim, setNewSim] = useState({
@@ -40,21 +42,20 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, simsRes] = await Promise.all([
+      const [usersRes, simsRes, purchasesRes, fengshuiRes] = await Promise.all([
         axios.get("http://localhost:5000/api/admin/users"),
-        axios.get("http://localhost:5000/api/sims")
+        axios.get("http://localhost:5000/api/sims"),
+        axios.get("http://localhost:5000/api/admin/purchases"),
+        axios.get("http://localhost:5000/api/admin/fengshui-history")
       ]);
 
       setUsers(usersRes.data.data);
       setSims(simsRes.data.data);
+      setPurchases(purchasesRes.data.data);
+      setFengshuiHistory(fengshuiRes.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.push("/login");
   };
 
   const handleAddSim = async (e) => {
@@ -98,28 +99,19 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold dark:text-white">Admin Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-600 dark:text-gray-400">
-                Xin chào, <span className="font-semibold">{user.name}</span>
-              </span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
-              >
-                <LogOut className="w-4 h-4" />
-                Đăng xuất
-              </button>
-            </div>
+            <span className="text-gray-600 dark:text-gray-400">
+              Xin chào, <span className="font-semibold">{user.name}</span>
+            </span>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-4 mb-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("sims")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
               activeTab === "sims"
                 ? "bg-primary text-white"
                 : "bg-white dark:bg-dark-lighter text-gray-700 dark:text-gray-300"
@@ -130,7 +122,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("users")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
               activeTab === "users"
                 ? "bg-primary text-white"
                 : "bg-white dark:bg-dark-lighter text-gray-700 dark:text-gray-300"
@@ -138,6 +130,28 @@ export default function AdminPage() {
           >
             <Users className="w-5 h-5" />
             Quản lý User ({users.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("purchases")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
+              activeTab === "purchases"
+                ? "bg-primary text-white"
+                : "bg-white dark:bg-dark-lighter text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            <ShoppingCart className="w-5 h-5" />
+            Lịch sử mua sim ({purchases.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("fengshui")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
+              activeTab === "fengshui"
+                ? "bg-primary text-white"
+                : "bg-white dark:bg-dark-lighter text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            <Sparkles className="w-5 h-5" />
+            Lịch sử phong thủy ({fengshuiHistory.length})
           </button>
         </div>
 
@@ -285,6 +299,98 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "purchases" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử mua Sim</h2>
+            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Người mua</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số Sim</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nhà mạng</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {purchases.map((purchase) => (
+                    <tr key={purchase.id}>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{purchase.user_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-mono">{purchase.sim_number}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.network}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{Number(purchase.price).toLocaleString()} đ</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {new Date(purchase.purchase_date).toLocaleString('vi-VN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {purchases.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  Chưa có lịch sử mua sim
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "fengshui" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử xem Phong Thủy</h2>
+            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Người xem</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày sinh</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giờ sinh</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giới tính</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại lịch</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Mệnh</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số may mắn</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày xem</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {fengshuiHistory.map((history) => (
+                    <tr key={history.id}>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{history.user_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {new Date(history.birth_date).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{history.birth_time || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {history.gender === 'male' ? 'Nam' : 'Nữ'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {history.calendar_type === 'solar' ? 'Dương lịch' : 'Âm lịch'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-sm font-semibold">
+                          {history.element}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-mono">{history.lucky_numbers}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {new Date(history.view_date).toLocaleString('vi-VN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {fengshuiHistory.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  Chưa có lịch sử xem phong thủy
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -12,6 +12,40 @@ CREATE TABLE IF NOT EXISTS sim_cards (
     status VARCHAR(20) DEFAULT 'Còn hàng'
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    sim_number VARCHAR(15) NOT NULL,
+    network VARCHAR(50) NOT NULL,
+    price DECIMAL(15, 2) NOT NULL,
+    category VARCHAR(50),
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS fengshui_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    birth_date DATE NOT NULL,
+    birth_time VARCHAR(10),
+    gender VARCHAR(10) NOT NULL,
+    calendar_type VARCHAR(10) NOT NULL,
+    element VARCHAR(20) NOT NULL,
+    lucky_numbers VARCHAR(50),
+    view_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Delete existing records if running multiple times
 TRUNCATE TABLE sim_cards;
 

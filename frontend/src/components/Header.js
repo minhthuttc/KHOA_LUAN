@@ -8,10 +8,24 @@ export default function Header() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    // Load user từ localStorage khi component mount
+    const loadUser = () => {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      } else {
+        setUser(null);
+      }
+    };
+
+    loadUser();
+
+    // Lắng nghe sự kiện storage để cập nhật khi localStorage thay đổi
+    window.addEventListener("storage", loadUser);
+
+    return () => {
+      window.removeEventListener("storage", loadUser);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -51,9 +65,11 @@ export default function Header() {
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <User className="w-4 h-4" />
-                  <span className="font-medium">{user.name}</span>
+                <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-full border-2 border-blue-200 dark:border-gray-600">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-800 dark:text-white">{user.name}</span>
                 </div>
                 {user.role === 'admin' && (
                   <Link

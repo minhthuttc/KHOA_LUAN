@@ -31,11 +31,14 @@ export default function LoginPage() {
         // Lưu thông tin user vào localStorage
         localStorage.setItem("user", JSON.stringify(res.data.user));
         
+        // Trigger storage event để Header cập nhật
+        window.dispatchEvent(new Event("storage"));
+        
         // Chuyển hướng dựa trên role
         if (res.data.user.role === "admin") {
-          router.push("/admin");
+          window.location.href = "/admin";
         } else {
-          router.push("/");
+          window.location.href = "/";
         }
       }
     } catch (err) {
