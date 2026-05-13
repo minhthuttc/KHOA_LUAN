@@ -18,7 +18,6 @@ export default function AdminPage() {
     sim_number: "",
     network: "Viettel",
     price: "",
-    category: "",
     feng_shui_element: "Kim",
     total_nodes: 5
   });
@@ -61,14 +60,19 @@ export default function AdminPage() {
   const handleAddSim = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/admin/sims", newSim);
+      // Tự động tạo category
+      const simData = {
+        ...newSim,
+        category: "Sim số đẹp"
+      };
+      
+      await axios.post("http://localhost:5000/api/admin/sims", simData);
       alert("Thêm sim thành công!");
       setShowAddForm(false);
       setNewSim({
         sim_number: "",
         network: "Viettel",
         price: "",
-        category: "",
         feng_shui_element: "Kim",
         total_nodes: 5
       });
@@ -192,17 +196,10 @@ export default function AdminPage() {
                   </select>
                   <input
                     type="number"
-                    placeholder="Giá"
+                    placeholder="Giá (VNĐ)"
                     value={newSim.price}
                     onChange={(e) => setNewSim({...newSim, price: e.target.value})}
                     required
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Loại sim"
-                    value={newSim.category}
-                    onChange={(e) => setNewSim({...newSim, category: e.target.value})}
                     className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
                   />
                   <select
@@ -210,20 +207,21 @@ export default function AdminPage() {
                     onChange={(e) => setNewSim({...newSim, feng_shui_element: e.target.value})}
                     className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
                   >
-                    <option>Kim</option>
-                    <option>Mộc</option>
-                    <option>Thủy</option>
-                    <option>Hỏa</option>
-                    <option>Thổ</option>
+                    <option value="Kim">Mệnh Kim</option>
+                    <option value="Mộc">Mệnh Mộc</option>
+                    <option value="Thủy">Mệnh Thủy</option>
+                    <option value="Hỏa">Mệnh Hỏa</option>
+                    <option value="Thổ">Mệnh Thổ</option>
                   </select>
                   <input
                     type="number"
-                    placeholder="Điểm nút (1-10)"
+                    placeholder="Số may mắn (1-10)"
                     value={newSim.total_nodes}
                     onChange={(e) => setNewSim({...newSim, total_nodes: e.target.value})}
                     min="1"
                     max="10"
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
+                    required
+                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white col-span-2"
                   />
                   <button
                     type="submit"
@@ -242,7 +240,8 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số Sim</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nhà mạng</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Mệnh</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số may mắn</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
                   </tr>
                 </thead>
@@ -252,7 +251,16 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white font-mono">{sim.sim_number}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{sim.network}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{sim.price.toLocaleString()} đ</td>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{sim.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        <span className="px-3 py-1 bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-700 dark:text-amber-400 rounded-full font-semibold text-sm">
+                          {sim.feng_shui_element}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        <span className="px-3 py-1 bg-primary/20 text-primary rounded-full font-semibold">
+                          {sim.total_nodes}/10
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleDeleteSim(sim.id)}
@@ -306,15 +314,19 @@ export default function AdminPage() {
         {activeTab === "purchases" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử mua Sim</h2>
-            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Người mua</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tài khoản</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số Sim</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nhà mạng</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên KH</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT KH</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Địa chỉ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
                   </tr>
                 </thead>
@@ -326,6 +338,20 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.network}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{Number(purchase.price).toLocaleString()} đ</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{purchase.customer_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.customer_phone}</td>
+                      <td className="px-6 py-4 dark:text-white max-w-xs truncate" title={purchase.customer_address}>
+                        {purchase.customer_address}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          purchase.payment_method === 'bank_transfer' 
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' 
+                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        }`}>
+                          {purchase.payment_method === 'bank_transfer' ? 'Chuyển khoản' : 'COD'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">
                         {new Date(purchase.purchase_date).toLocaleString('vi-VN')}
                       </td>

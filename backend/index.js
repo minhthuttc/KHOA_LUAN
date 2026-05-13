@@ -221,14 +221,18 @@ app.delete('/api/admin/sims/:id', async (req, res) => {
 // API mua sim (lưu lịch sử)
 app.post('/api/purchase', async (req, res) => {
   try {
-    const { user_id, user_name, sim_number, network, price, category } = req.body;
+    const { user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method } = req.body;
     
+    // Lưu lịch sử mua hàng
     await pool.query(
-      'INSERT INTO purchases (user_id, user_name, sim_number, network, price, category) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, user_name, sim_number, network, price, category]
+      'INSERT INTO purchases (user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method]
     );
     
-    res.json({ success: true, message: 'Đã lưu lịch sử mua sim' });
+    // Xóa sim khỏi kho (đã bán)
+    await pool.query('DELETE FROM sim_cards WHERE sim_number = ?', [sim_number]);
+    
+    res.json({ success: true, message: 'Đã lưu lịch sử mua sim và xóa sim khỏi kho' });
   } catch (error) {
     console.error('Error in /api/purchase:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
