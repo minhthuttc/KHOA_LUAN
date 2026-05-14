@@ -51,17 +51,24 @@ export default function KhoSoPage() {
       filtered = filtered.filter((sim) => {
         const simNumber = sim.sim_number;
         const category = sim.category ? sim.category.toLowerCase() : "";
+        const lastTwo = simNumber.slice(-2); // 2 số cuối
+        const lastThree = simNumber.slice(-3); // 3 số cuối
+        const lastFour = simNumber.slice(-4); // 4 số cuối
         
         return filterData.simType.some((type) => {
           switch (type) {
             case "tam-hoa":
-              return /(\d)\1{2}/.test(simNumber) || category.includes("tam hoa");
+              // Tìm tam hoa ở đuôi (3 số cuối giống nhau)
+              return /(\d)\1{2}$/.test(simNumber) || category.includes("tam hoa");
             case "tu-quy":
-              return /(\d)\1{3}/.test(simNumber) || category.includes("tứ quý");
+              // Tìm tứ quý ở đuôi (4 số cuối giống nhau)
+              return /(\d)\1{3}$/.test(simNumber) || category.includes("tứ quý");
             case "than-tai":
-              return simNumber.includes("39") || simNumber.includes("79") || category.includes("thần tài");
+              // Tìm 39 hoặc 79 ở đuôi
+              return lastTwo === "39" || lastTwo === "79" || category.includes("thần tài");
             case "loc-phat":
-              return simNumber.includes("68") || simNumber.includes("86") || simNumber.includes("78") || category.includes("lộc phát");
+              // Tìm 68, 86, 78 ở đuôi
+              return lastTwo === "68" || lastTwo === "86" || lastTwo === "78" || category.includes("lộc phát");
             default:
               return false;
           }
@@ -90,13 +97,11 @@ export default function KhoSoPage() {
       const day = String(date.getDate()).padStart(2, "0");
       const month = String(date.getMonth() + 1).padStart(2, "0");
       
-      // Tìm các pattern: DDMM, MMDD, DDMMYY, DDMMYYYY
+      // Tìm 2 số cuối của sim khớp với ngày hoặc tháng
       filtered = filtered.filter((sim) => {
         const simNum = sim.sim_number;
-        return (
-          simNum.includes(`${day}${month}`) ||
-          simNum.includes(`${month}${day}`)
-        );
+        const lastTwo = simNum.slice(-2); // Lấy 2 số cuối
+        return lastTwo === day || lastTwo === month;
       });
     }
 

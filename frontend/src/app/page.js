@@ -11,6 +11,7 @@ export default function Home() {
     luckyNumbers: "",
     priceLimit: 5000000,
     expectedNetwork: "",
+    purpose: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,12 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
     setSearched(true);
+    
+    // Scroll xuống phần kết quả
+    setTimeout(() => {
+      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    
     try {
       const payload = {
         ...formData,
@@ -64,7 +71,7 @@ export default function Home() {
               TÌM KIẾM <span className="text-primary">SIM SỐ ĐẸP</span> BẰNG AI
             </h1>
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl font-light leading-relaxed">
-              Nhập ngày sinh và sở thích của bạn, AI của chúng tôi sẽ phân tích ngũ hành, tổng nút và điểm hành vi để gợi ý chiếc SIM sinh ra là NHỮNG GÌ BẠN CẦN.
+              Nhập ngày sinh, sở thích và mục đích sử dụng. AI sẽ phân tích ngũ hành, tổng nút và gợi ý chiếc SIM phù hợp nhất với bạn.
             </p>
           </div>
 
@@ -92,8 +99,20 @@ export default function Home() {
                   placeholder="Vd: 39, 79, 68"
                   value={formData.luckyNumbers}
                   onChange={handleChange}
-                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Mục đích sử dụng sim</label>
+                <textarea
+                  rows="3"
+                  name="purpose"
+                  value={formData.purpose}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: Kinh doanh, cá nhân, muốn số đẹp mang lại may mắn..."
+                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none"
+                ></textarea>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -134,7 +153,7 @@ export default function Home() {
                 disabled={loading}
                 className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-4"
               >
-                {loading ? <Loader2 className="animate-spin" /> : "Trí tuệ nhân tạo phân tích"}
+                {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
               </button>
             </form>
           </div>

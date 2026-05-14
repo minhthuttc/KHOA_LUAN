@@ -11,9 +11,6 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
     anniversaryDate: "",
   });
 
-  const [displayMinPrice, setDisplayMinPrice] = useState("500.000");
-  const [displayMaxPrice, setDisplayMaxPrice] = useState("5.000.000");
-
   const networks = ["Viettel", "Vinaphone", "Mobifone"];
   const simTypes = [
     { value: "tam-hoa", label: "Sim Tam Hoa" },
@@ -41,38 +38,21 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
     setFilters((prev) => {
       const newFilters = { ...prev, [name]: value };
       
-      // Tự động áp dụng filter cho price và special numbers
-      if (name === 'minPrice' || name === 'maxPrice' || name === 'specialNumbers') {
+      // Tự động áp dụng filter
+      if (name === 'specialNumbers' || name === 'anniversaryDate') {
         setTimeout(() => onFilterChange(newFilters), 300);
       }
       return newFilters;
     });
   };
 
-  const handlePriceChange = (e) => {
-    const { name, value } = e.target;
-    // Loại bỏ tất cả ký tự không phải số
-    const numericValue = value.replace(/\D/g, '');
-    const numberValue = numericValue === '' ? 0 : parseInt(numericValue);
-    
-    // Format với dấu chấm phân cách
-    const formattedValue = numericValue === '' ? '' : new Intl.NumberFormat('vi-VN').format(numberValue);
-    
-    if (name === 'minPrice') {
-      setDisplayMinPrice(formattedValue);
-      setFilters((prev) => {
-        const newFilters = { ...prev, minPrice: numberValue };
-        setTimeout(() => onFilterChange(newFilters), 300);
-        return newFilters;
-      });
-    } else if (name === 'maxPrice') {
-      setDisplayMaxPrice(formattedValue);
-      setFilters((prev) => {
-        const newFilters = { ...prev, maxPrice: numberValue };
-        setTimeout(() => onFilterChange(newFilters), 300);
-        return newFilters;
-      });
-    }
+  const handlePriceSliderChange = (e) => {
+    const value = parseInt(e.target.value);
+    setFilters((prev) => {
+      const newFilters = { ...prev, maxPrice: value };
+      setTimeout(() => onFilterChange(newFilters), 100);
+      return newFilters;
+    });
   };
 
   const handleApply = () => {
@@ -91,8 +71,6 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
       anniversaryDate: "",
     };
     setFilters(resetFilters);
-    setDisplayMinPrice("500.000");
-    setDisplayMaxPrice("5.000.000");
     onFilterChange(resetFilters);
     
     // Scroll lên đầu trang
@@ -167,20 +145,23 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
 
         {/* Khoảng giá */}
         <div>
-          <label className="block text-sm font-semibold mb-3 dark:text-gray-200">
-            Khoảng giá tối đa
+          <label className="block text-sm font-semibold mb-2 dark:text-gray-200">
+            Ngân sách tối đa: <span className="text-primary font-bold">{formatPrice(filters.maxPrice)} đ</span>
           </label>
           <input
-            type="text"
+            type="range"
             name="maxPrice"
-            value={displayMaxPrice}
-            onChange={handlePriceChange}
-            placeholder="Nhập giá tối đa"
-            className="w-full bg-white dark:bg-dark border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+            min="500000"
+            max="5000000"
+            step="500000"
+            value={filters.maxPrice}
+            onChange={handlePriceSliderChange}
+            className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            500.000 đ - 5.000.000 đ
-          </p>
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <span>500.000 đ</span>
+            <span>5.000.000 đ</span>
+          </div>
         </div>
 
         {/* Số đặc biệt */}

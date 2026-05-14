@@ -119,9 +119,17 @@ app.post('/api/recommend', async (req, res) => {
 app.get('/api/sims', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM sim_cards WHERE status = "Còn hàng" ORDER BY price ASC');
+    
+    // Thêm suitabilityScore mặc định cho kho sim
+    const simsWithScore = rows.map(sim => ({
+      ...sim,
+      suitabilityScore: 0,
+      explainableAI: []
+    }));
+    
     res.json({
       success: true,
-      data: rows
+      data: simsWithScore
     });
   } catch (error) {
     console.error('Error in /api/sims:', error);

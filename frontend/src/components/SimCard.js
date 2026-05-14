@@ -20,6 +20,7 @@ export default function SimCard({ sim }) {
     network, 
     price, 
     category, 
+    description,
     suitabilityScore, 
     explainableAI,
     fengShuiPoint,
@@ -132,34 +133,44 @@ export default function SimCard({ sim }) {
 
       {/* Main SIM Number */}
       <div className="text-center my-4 z-10">
-        <h3 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-[0.1em] text-gradient">
+        <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-[0.1em] text-gradient whitespace-nowrap">
           {formatPhone(sim_number)}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">{category}</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium mt-2 text-sm">{category}</p>
       </div>
 
       {/* Price */}
       <div className="text-center mb-6 z-10">
-        <p className="text-2xl font-bold text-red-500 dark:text-red-400">
+        <p className="text-xl font-bold text-red-500 dark:text-red-400">
           {formatPrice(price)}
         </p>
       </div>
 
       <div className="w-full h-px bg-gray-100 dark:bg-gray-800 my-4 z-10"></div>
 
-      {/* Explainable AI block */}
-      <div className="flex-grow z-10">
+      {/* Description block */}
+      <div className="flex-grow z-10 min-h-[100px]">
         <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-           Lý do phù hợp:
+           Chi tiết về sim:
         </h4>
-        <ul className="space-y-2">
-          {explainableAI && explainableAI.map((reason, idx) => (
-            <li key={idx} className="flex items-start text-sm text-gray-600 dark:text-gray-400 gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-              <span>{reason}</span>
-            </li>
-          ))}
-        </ul>
+        {description ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-4">
+            {description}
+          </p>
+        ) : explainableAI && explainableAI.length > 0 ? (
+          <ul className="space-y-2">
+            {explainableAI.slice(0, 3).map((reason, idx) => (
+              <li key={idx} className="flex items-start text-sm text-gray-600 dark:text-gray-400 gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                <span className="line-clamp-2">{reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+            Sim đẹp, giá tốt, phù hợp cho mọi nhu cầu sử dụng.
+          </p>
+        )}
       </div>
 
       {/* CTA Button */}
