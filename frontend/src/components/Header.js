@@ -59,8 +59,12 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             <Link href="/" className="font-medium hover:text-primary transition-colors">Trang chủ</Link>
             <Link href="/kho-so" className="font-medium hover:text-primary transition-colors">Kho số</Link>
-            <Link href="/phong-thuy" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</Link>
-            <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
+            {user?.role !== 'admin' && (
+              <>
+                <Link href="/phong-thuy" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</Link>
+                <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
+              </>
+            )}
           </nav>
           <div className="flex items-center gap-3">
             {user ? (

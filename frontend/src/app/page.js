@@ -139,7 +139,7 @@ export default function Home() {
                     type="range"
                     name="priceLimit"
                     min="500000"
-                    max="20000000"
+                    max="5000000"
                     step="500000"
                     value={formData.priceLimit}
                     onChange={handleChange}

@@ -190,7 +190,7 @@ app.post('/api/login', async (req, res) => {
 // API lấy danh sách users (admin only)
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC');
+    const [users] = await pool.query('SELECT id, name, role, created_at FROM users ORDER BY created_at DESC');
     res.json({ success: true, data: users });
   } catch (error) {
     console.error('Error in /api/admin/users:', error);

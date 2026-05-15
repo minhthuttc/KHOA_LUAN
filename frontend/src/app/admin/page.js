@@ -284,24 +284,26 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vai trò</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày tạo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {users.map((u) => (
                     <tr key={u.id}>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{u.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{u.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{u.phone}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{u.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{u.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          u.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          u.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        {new Date(u.created_at).toLocaleDateString('vi-VN')}
                       </td>
                     </tr>
                   ))}

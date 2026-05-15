@@ -176,7 +176,7 @@ export default function SimCard({ sim }) {
       {/* CTA Button */}
       <button 
         onClick={handleOpenModal}
-        className="w-full mt-6 bg-dark hover:bg-black dark:bg-primary dark:hover:bg-primary-hover dark:text-white text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 z-10"
+        className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 z-10 shadow-md hover:shadow-lg"
       >
         Mua Ngay <ChevronRight className="w-4 h-4"/>
       </button>
