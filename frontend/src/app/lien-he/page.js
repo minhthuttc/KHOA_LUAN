@@ -48,7 +48,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary to-amber-600 text-white py-16">
+      <div className="bg-primary text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>
           <p className="text-xl text-white/90">
@@ -80,7 +80,7 @@ export default function ContactPage() {
                   </div>
                   <h3 className="font-bold text-lg dark:text-white">Email</h3>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">minhminhtv.220403@gmail.com</p>
+                <p className="text-gray-600 dark:text-gray-400">nguyenthutv.220403@gmail.com</p>
               </div>
 
               <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
