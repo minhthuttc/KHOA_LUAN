@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Users, Package, Trash2, Plus, ShoppingCart, Sparkles, Search } from "lucide-react";
+import { Users, Package, Trash2, Plus, ShoppingCart, Sparkles, Search, MessageSquare } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [purchases, setPurchases] = useState([]);
   const [fengshuiHistory, setFengshuiHistory] = useState([]);
   const [recommendationHistory, setRecommendationHistory] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [activeTab, setActiveTab] = useState("sims");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSim, setNewSim] = useState({
@@ -42,12 +43,13 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, simsRes, purchasesRes, fengshuiRes, recommendationRes] = await Promise.all([
+      const [usersRes, simsRes, purchasesRes, fengshuiRes, recommendationRes, messagesRes] = await Promise.all([
         axios.get("http://localhost:5000/api/admin/users"),
         axios.get("http://localhost:5000/api/sims"),
         axios.get("http://localhost:5000/api/admin/purchases"),
         axios.get("http://localhost:5000/api/admin/fengshui-history"),
-        axios.get("http://localhost:5000/api/admin/recommendation-history")
+        axios.get("http://localhost:5000/api/admin/recommendation-history"),
+        axios.get("http://localhost:5000/api/admin/messages")
       ]);
 
       setUsers(usersRes.data.data);
@@ -55,6 +57,7 @@ export default function AdminPage() {
       setPurchases(purchasesRes.data.data);
       setFengshuiHistory(fengshuiRes.data.data);
       setRecommendationHistory(recommendationRes.data.data);
+      setMessages(messagesRes.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -170,6 +173,17 @@ export default function AdminPage() {
           >
             <Search className="w-5 h-5" />
             Lịch sử phân tích ({recommendationHistory.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap ${
+              activeTab === "messages"
+                ? "bg-primary text-white"
+                : "bg-white dark:bg-dark-lighter text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            <MessageSquare className="w-5 h-5" />
+            Tin nhắn liên hệ ({messages.filter(m => m.status === 'Chưa đọc').length})
           </button>
         </div>
 
@@ -488,6 +502,71 @@ export default function AdminPage() {
               {recommendationHistory.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   Chưa có lịch sử phân tích nhu cầu
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "messages" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 dark:text-white">Tin nhắn liên hệ từ khách hàng</h2>
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div 
+                  key={msg.id}
+                  className={`bg-white dark:bg-dark-lighter rounded-xl p-6 border-2 ${
+                    msg.status === 'Chưa đọc' 
+                      ? 'border-primary shadow-lg' 
+                      : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold dark:text-white">{msg.name}</h3>
+                      <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <span>📞 {msg.phone}</span>
+                        {msg.email && <span>✉️ {msg.email}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        msg.status === 'Chưa đọc'
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      }`}>
+                        {msg.status}
+                      </span>
+                      {msg.status === 'Chưa đọc' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await axios.put(`http://localhost:5000/api/admin/messages/${msg.id}`, {
+                                status: 'Đã đọc'
+                              });
+                              fetchData();
+                            } catch (error) {
+                              console.error('Error updating message:', error);
+                            }
+                          }}
+                          className="px-3 py-1 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold transition"
+                        >
+                          Đánh dấu đã đọc
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{msg.message}</p>
+                  </div>
+                  <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(msg.created_at).toLocaleString('vi-VN')}
+                  </div>
+                </div>
+              ))}
+              {messages.length === 0 && (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  Chưa có tin nhắn liên hệ nào
                 </div>
               )}
             </div>

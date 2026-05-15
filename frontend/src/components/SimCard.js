@@ -21,6 +21,7 @@ export default function SimCard({ sim }) {
     price, 
     category, 
     description,
+    status,
     suitabilityScore, 
     explainableAI,
     fengShuiPoint,
@@ -121,9 +122,15 @@ export default function SimCard({ sim }) {
       
       {/* Network Badge & Match Score Badge */}
       <div className="flex justify-between items-start mb-6 z-10 w-full">
-        <span className={`${getNetworkBg(network)} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider`}>
-          {network}
-        </span>
+        {status === 'Đã bán' ? (
+          <span className="bg-gray-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+            ĐÃ ĐẶT
+          </span>
+        ) : (
+          <span className={`${getNetworkBg(network)} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider`}>
+            {network}
+          </span>
+        )}
         
         <div className="flex bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-primary px-3 py-1 rounded-full font-bold items-center gap-1 shadow-sm border border-amber-100 dark:border-amber-900/50">
           <Sparkles className="w-4 h-4" />
@@ -174,12 +181,21 @@ export default function SimCard({ sim }) {
       </div>
 
       {/* CTA Button */}
-      <button 
-        onClick={handleOpenModal}
-        className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 z-10 shadow-md hover:shadow-lg"
-      >
-        Mua Ngay <ChevronRight className="w-4 h-4"/>
-      </button>
+      {status === 'Đã bán' ? (
+        <button 
+          disabled
+          className="w-full mt-6 bg-gray-400 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 z-10 cursor-not-allowed opacity-60"
+        >
+          Đã có người đặt
+        </button>
+      ) : (
+        <button 
+          onClick={handleOpenModal}
+          className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 z-10 shadow-md hover:shadow-lg"
+        >
+          Mua Ngay <ChevronRight className="w-4 h-4"/>
+        </button>
+      )}
 
       {/* Subtle background decoration */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none"></div>

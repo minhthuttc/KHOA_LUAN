@@ -118,7 +118,8 @@ app.post('/api/recommend', async (req, res) => {
 // API endpoint to get all sims
 app.get('/api/sims', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM sim_cards WHERE status = "Còn hàng" ORDER BY price ASC');
+    // Lấy tất cả sim, bao gồm cả sim đã bán
+    const [rows] = await pool.query('SELECT * FROM sim_cards ORDER BY price ASC');
     
     // Thêm suitabilityScore mặc định cho kho sim
     const simsWithScore = rows.map(sim => ({
@@ -237,10 +238,10 @@ app.post('/api/purchase', async (req, res) => {
       [user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method]
     );
     
-    // Xóa sim khỏi kho (đã bán)
-    await pool.query('DELETE FROM sim_cards WHERE sim_number = ?', [sim_number]);
+    // Đổi status sim thành "Đã bán" thay vì xóa
+    await pool.query('UPDATE sim_cards SET status = ? WHERE sim_number = ?', ['Đã bán', sim_number]);
     
-    res.json({ success: true, message: 'Đã lưu lịch sử mua sim và xóa sim khỏi kho' });
+    res.json({ success: true, message: 'Đã lưu lịch sử mua sim và cập nhật trạng thái' });
   } catch (error) {
     console.error('Error in /api/purchase:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
@@ -316,6 +317,50 @@ app.get('/api/admin/recommendation-history', async (req, res) => {
     res.json({ success: true, data: history });
   } catch (error) {
     console.error('Error in /api/admin/recommendation-history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lưu tin nhắn liên hệ
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, phone, email, message } = req.body;
+    
+    await pool.query(
+      'INSERT INTO messages (name, phone, email, message) VALUES (?, ?, ?, ?)',
+      [name, phone, email || null, message]
+    );
+    
+    res.json({ success: true, message: 'Đã gửi tin nhắn thành công' });
+  } catch (error) {
+    console.error('Error in /api/contact:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy danh sách tin nhắn (admin)
+app.get('/api/admin/messages', async (req, res) => {
+  try {
+    const [messages] = await pool.query(
+      'SELECT * FROM messages ORDER BY created_at DESC'
+    );
+    res.json({ success: true, data: messages });
+  } catch (error) {
+    console.error('Error in /api/admin/messages:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API đánh dấu tin nhắn đã đọc
+app.put('/api/admin/messages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    await pool.query('UPDATE messages SET status = ? WHERE id = ?', [status, id]);
+    res.json({ success: true, message: 'Đã cập nhật trạng thái' });
+  } catch (error) {
+    console.error('Error in /api/admin/messages:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });

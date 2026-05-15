@@ -62,7 +62,7 @@ export default function Header() {
             {user?.role !== 'admin' && (
               <>
                 <Link href="/phong-thuy" className="font-medium hover:text-primary transition-colors">Xem Phong Thủy</Link>
-                <a href="#" className="font-medium hover:text-primary transition-colors">Liên hệ</a>
+                <Link href="/lien-he" className="font-medium hover:text-primary transition-colors">Liên hệ</Link>
               </>
             )}
           </nav>
