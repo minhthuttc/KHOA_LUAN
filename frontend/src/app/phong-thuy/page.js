@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Calendar, Clock, Sparkles, User, BookOpen } from "lucide-react";
+import axios from "axios";
 
 export default function PhongThuyPage() {
   const [birthDate, setBirthDate] = useState("");
@@ -10,7 +11,7 @@ export default function PhongThuyPage() {
   const [calendarType, setCalendarType] = useState(null);
   const [result, setResult] = useState(null);
 
-  const calculateFengShui = () => {
+  const calculateFengShui = async () => {
     if (!birthDate) {
       alert("Vui lòng nhập ngày sinh!");
       return;
@@ -91,6 +92,27 @@ export default function PhongThuyPage() {
       wealthFortune,
       advice
     });
+
+    // Lưu lịch sử xem phong thủy
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        await axios.post("http://localhost:5000/api/fengshui-history", {
+          user_id: user.id,
+          user_name: user.name,
+          birth_date: birthDate,
+          birth_time: birthTime || null,
+          gender: gender,
+          calendar_type: calendarType,
+          element: element,
+          lucky_numbers: luckyNumbers.join(", ")
+        });
+      }
+    } catch (error) {
+      console.error("Error saving fengshui history:", error);
+      // Không hiển thị lỗi cho user, chỉ log
+    }
 
     // Scroll xuống kết quả
     setTimeout(() => {

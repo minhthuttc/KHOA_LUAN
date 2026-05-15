@@ -39,6 +39,27 @@ export default function Home() {
       const res = await axios.post("http://localhost:5000/api/recommend", payload);
       if (res.data.success) {
         setRecommendations(res.data.data);
+        
+        // Lưu lịch sử phân tích nhu cầu
+        try {
+          const userData = localStorage.getItem("user");
+          if (userData) {
+            const user = JSON.parse(userData);
+            await axios.post("http://localhost:5000/api/recommendation-history", {
+              user_id: user.id,
+              user_name: user.name,
+              birth_date: formData.birthDate || null,
+              lucky_numbers: formData.luckyNumbers || null,
+              price_limit: formData.priceLimit,
+              expected_network: formData.expectedNetwork || null,
+              purpose: formData.purpose || null,
+              result_count: res.data.data.length
+            });
+          }
+        } catch (historyError) {
+          console.error("Error saving recommendation history:", historyError);
+          // Không hiển thị lỗi cho user
+        }
       }
     } catch (err) {
       console.error("Error fetching AI recommendations:", err);

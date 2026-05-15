@@ -290,6 +290,36 @@ app.get('/api/admin/fengshui-history', async (req, res) => {
   }
 });
 
+// API lưu lịch sử phân tích nhu cầu
+app.post('/api/recommendation-history', async (req, res) => {
+  try {
+    const { user_id, user_name, birth_date, lucky_numbers, price_limit, expected_network, purpose, result_count } = req.body;
+    
+    await pool.query(
+      'INSERT INTO recommendation_history (user_id, user_name, birth_date, lucky_numbers, price_limit, expected_network, purpose, result_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [user_id, user_name, birth_date, lucky_numbers, price_limit, expected_network, purpose, result_count]
+    );
+    
+    res.json({ success: true, message: 'Đã lưu lịch sử phân tích' });
+  } catch (error) {
+    console.error('Error in /api/recommendation-history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy lịch sử phân tích nhu cầu (admin)
+app.get('/api/admin/recommendation-history', async (req, res) => {
+  try {
+    const [history] = await pool.query(
+      'SELECT * FROM recommendation_history ORDER BY search_date DESC'
+    );
+    res.json({ success: true, data: history });
+  } catch (error) {
+    console.error('Error in /api/admin/recommendation-history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);

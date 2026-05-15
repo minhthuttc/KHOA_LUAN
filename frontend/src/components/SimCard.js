@@ -133,7 +133,7 @@ export default function SimCard({ sim }) {
 
       {/* Main SIM Number */}
       <div className="text-center my-4 z-10">
-        <h3 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-[0.1em] text-gradient whitespace-nowrap">
+        <h3 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent tracking-[0.1em] whitespace-nowrap drop-shadow-sm">
           {formatPhone(sim_number)}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 font-medium mt-2 text-sm">{category}</p>
