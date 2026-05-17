@@ -3,8 +3,8 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 export const metadata = {
-  title: 'MINHTHUSIM - Gợi ý Sim Phong Thủy AI',
-  description: 'Hệ thống gợi ý sim số đẹp ứng dụng trí tuệ nhân tạo, tối ưu phong thủy và điểm sở thích cá nhân',
+  title: '✨ MINHTHUSIM - Sim Số Đẹp Phong Thủy',
+  description: 'Chuyên cung cấp sim số đẹp, sim phong thủy hợp mệnh. Tư vấn miễn phí - Giao sim tận nơi - Giá tốt nhất thị trường',
 }
 
 export default function RootLayout({ children }) {

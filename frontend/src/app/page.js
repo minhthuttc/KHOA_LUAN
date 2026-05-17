@@ -80,23 +80,25 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-dark text-white py-20 lg:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-20 lg:py-32">
+        {/* Animated background effects */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[100px]"></div>
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-yellow-500/30 to-amber-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-yellow-600/20 to-orange-500/20 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '1s'}}></div>
+          <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-full blur-[80px]"></div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
-              TÌM KIẾM <span className="text-primary">SIM SỐ ĐẸP</span> BẰNG AI
+              TÌM KIẾM <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 bg-clip-text text-transparent">SIM SỐ ĐẸP</span> BẰNG AI
             </h1>
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl font-light leading-relaxed">
               Nhập ngày sinh, sở thích và mục đích sử dụng. AI sẽ phân tích ngũ hành, tổng nút và gợi ý chiếc SIM phù hợp nhất với bạn.
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl animate-fade-in" style={{animationDelay: '0.2s'}}>
+          <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 md:p-8 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in" style={{animationDelay: '0.2s'}}>
             <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
               <Search className="text-primary" /> Phân tích nhu cầu
             </h2>
