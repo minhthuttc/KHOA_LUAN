@@ -227,6 +227,49 @@ app.delete('/api/admin/sims/:id', async (req, res) => {
   }
 });
 
+// API cập nhật status sim (admin)
+app.put('/api/admin/sims/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    await pool.query('UPDATE sim_cards SET status = ? WHERE id = ?', [status, id]);
+    res.json({ success: true, message: 'Cập nhật trạng thái sim thành công' });
+  } catch (error) {
+    console.error('Error in /api/admin/sims/status:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API cập nhật status đơn hàng (admin)
+app.put('/api/admin/purchases/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    // Lấy thông tin đơn hàng
+    const [purchases] = await pool.query('SELECT * FROM purchases WHERE id = ?', [id]);
+    if (purchases.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+    
+    const purchase = purchases[0];
+    
+    // Cập nhật status đơn hàng
+    await pool.query('UPDATE purchases SET status = ? WHERE id = ?', [status, id]);
+    
+    // Nếu hủy đơn, trả sim về kho (status = "Còn hàng")
+    if (status === 'Đã hủy') {
+      await pool.query('UPDATE sim_cards SET status = ? WHERE sim_number = ?', ['Còn hàng', purchase.sim_number]);
+    }
+    
+    res.json({ success: true, message: 'Cập nhật trạng thái đơn hàng thành công' });
+  } catch (error) {
+    console.error('Error in /api/admin/purchases/status:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 // API mua sim (lưu lịch sử)
 app.post('/api/purchase', async (req, res) => {
   try {

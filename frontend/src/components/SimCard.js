@@ -160,7 +160,16 @@ export default function SimCard({ sim }) {
         <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
            Chi tiết về sim:
         </h4>
-        {description ? (
+        {status === 'Đã bán' ? (
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+              ⚠️ Sim này đã có người mua
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Vui lòng chọn sim khác
+            </p>
+          </div>
+        ) : description ? (
           <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-4">
             {description}
           </p>

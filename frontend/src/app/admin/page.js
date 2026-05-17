@@ -352,12 +352,11 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số Sim</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nhà mạng</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên KH</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT KH</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Địa chỉ</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -367,12 +366,8 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white font-mono">{purchase.sim_number}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.network}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{Number(purchase.price).toLocaleString('vi-VN')} đ</td>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.category}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{purchase.customer_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{purchase.customer_phone}</td>
-                      <td className="px-6 py-4 dark:text-white max-w-xs truncate" title={purchase.customer_address}>
-                        {purchase.customer_address}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           purchase.payment_method === 'bank_transfer' 
@@ -382,8 +377,62 @@ export default function AdminPage() {
                           {purchase.payment_method === 'bank_transfer' ? 'Chuyển khoản' : 'COD'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
-                        {new Date(purchase.purchase_date).toLocaleString('vi-VN')}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          purchase.status === 'Đã duyệt' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : purchase.status === 'Đã hủy'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}>
+                          {purchase.status || 'Chờ duyệt'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {purchase.status === 'Chờ duyệt' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Duyệt đơn hàng sim ${purchase.sim_number}?`)) return;
+                                try {
+                                  await axios.put(`http://localhost:5000/api/admin/purchases/${purchase.id}/status`, {
+                                    status: 'Đã duyệt'
+                                  });
+                                  alert('Đã duyệt đơn hàng!');
+                                  fetchData();
+                                } catch (error) {
+                                  alert('Có lỗi xảy ra!');
+                                }
+                              }}
+                              className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-semibold transition"
+                            >
+                              Duyệt
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Hủy đơn hàng sim ${purchase.sim_number}? Sim sẽ được trả về kho.`)) return;
+                                try {
+                                  await axios.put(`http://localhost:5000/api/admin/purchases/${purchase.id}/status`, {
+                                    status: 'Đã hủy'
+                                  });
+                                  alert('Đã hủy đơn hàng và trả sim về kho!');
+                                  fetchData();
+                                } catch (error) {
+                                  alert('Có lỗi xảy ra!');
+                                }
+                              }}
+                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold transition"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        )}
+                        {purchase.status === 'Đã duyệt' && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Đã xử lý</span>
+                        )}
+                        {purchase.status === 'Đã hủy' && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Đã hủy</span>
+                        )}
                       </td>
                     </tr>
                   ))}

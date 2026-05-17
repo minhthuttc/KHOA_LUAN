@@ -515,3 +515,298 @@ Hệ thống tính phong thủy của MINHTHUSIM kết hợp:
 **Tác giả**: Hệ thống MINHTHUSIM  
 **Ngày tạo**: 2024  
 **Phiên bản**: 1.0
+
+
+---
+
+## 🎯 16. ĐIỂM PHÙ HỢP (SUITABILITY SCORE)
+
+### Khái niệm
+**Suitability Score (S)** là điểm đánh giá mức độ phù hợp của sim số với người dùng, được tính bằng thuật toán AI dựa trên 3 yếu tố chính:
+- **Phong Thủy (P)** - 50% trọng số
+- **Sở Thích (I)** - 40% trọng số  
+- **Hành Vi (B)** - 10% trọng số
+
+### Công thức tính
+```javascript
+S = (0.5 × P) + (0.4 × I) + (0.1 × B)
+```
+
+Trong đó:
+- **S**: Suitability Score (0-10)
+- **P**: Phong Thủy Point (0-10)
+- **I**: Interest Point (0-10)
+- **B**: Behavior Point (0-10)
+
+---
+
+### 16.1. PHONG THỦY POINT (P) - 50%
+
+Điểm phong thủy được tính dựa trên:
+
+#### a) Điểm Nút Sim (1-10)
+```javascript
+P = total_nodes // Điểm nút từ database
+```
+
+#### b) Loại Sim Đặc Biệt (+2 điểm)
+```javascript
+if (category === 'Sim thần tài' || category === 'Sim lộc phát') {
+  P = Math.min(10, P + 2)
+}
+```
+
+#### c) Mệnh Ngũ Hành Phù Hợp
+- Sim có mệnh tương sinh với mệnh người dùng: +1 điểm
+- Sim có mệnh tương khắc với mệnh người dùng: -1 điểm
+
+**Ví dụ:**
+- Sim có điểm nút: 8/10
+- Loại: Sim thần tài (+2)
+- Mệnh phù hợp (+1)
+- **P = 8 + 2 + 1 = 10/10** (tối đa 10)
+
+---
+
+### 16.2. SỞ THÍCH POINT (I) - 40%
+
+Điểm sở thích được tính dựa trên thông tin cá nhân:
+
+#### a) Số May Mắn
+```javascript
+luckyNumbers.forEach(num => {
+  if (sim_number.includes(num)) {
+    I += 2 // Mỗi số may mắn khớp +2 điểm
+  }
+})
+```
+
+#### b) Năm Sinh
+```javascript
+const year = birthDate.split('-')[0] // YYYY
+if (sim_number.endsWith(year)) {
+  I += 5 // Đuôi sim chứa năm sinh +5 điểm
+}
+```
+
+#### c) Ngày/Tháng Sinh
+```javascript
+const day = birthDate.split('-')[2]   // DD
+const month = birthDate.split('-')[1] // MM
+
+if (sim_number.endsWith(day) || sim_number.endsWith(month)) {
+  I += 3 // Đuôi sim chứa ngày/tháng sinh +3 điểm
+}
+```
+
+**Điểm tối thiểu:** Nếu I = 0, gán I = 2 (điểm cơ bản)
+
+**Ví dụ:**
+- Số may mắn: 8, 9 (cả 2 đều có trong sim) → +4 điểm
+- Năm sinh: 1995 (đuôi sim là 95) → +5 điểm
+- **I = 4 + 5 = 9/10**
+
+---
+
+### 16.3. HÀNH VI POINT (B) - 10%
+
+Điểm hành vi dựa trên lịch sử người dùng:
+
+#### Hiện tại (Random)
+```javascript
+B = Math.floor(Math.random() * 5) + 5 // Random 5-9
+```
+
+#### Tương lai (Có thể mở rộng)
+- Lịch sử xem sim: +1 điểm
+- Lịch sử mua sim: +2 điểm
+- Thời gian xem lâu: +1 điểm
+- Tương tác nhiều: +1 điểm
+
+---
+
+### 16.4. VÍ DỤ TÍNH TOÁN THỰC TÊ
+
+**Thông tin người dùng:**
+- Sinh năm: 1995
+- Số may mắn: 8, 9
+- Mệnh: Kim
+
+**Sim: 0987899995**
+- Điểm nút: 8/10
+- Loại: Sim thần tài
+- Mệnh: Kim (tương sinh với Kim)
+- Chứa số 8, 9
+- Đuôi 95 (năm sinh)
+
+**Tính toán:**
+
+1. **Phong Thủy Point (P):**
+   - Điểm nút: 8
+   - Sim thần tài: +2
+   - Mệnh phù hợp: +1
+   - **P = 8 + 2 + 1 = 10/10** (max 10)
+
+2. **Sở Thích Point (I):**
+   - Số 8 trong sim: +2
+   - Số 9 trong sim: +2
+   - Đuôi 95 (năm sinh): +5
+   - **I = 2 + 2 + 5 = 9/10**
+
+3. **Hành Vi Point (B):**
+   - Random: 7/10
+   - **B = 7/10**
+
+4. **Suitability Score (S):**
+   ```
+   S = (0.5 × 10) + (0.4 × 9) + (0.1 × 7)
+   S = 5 + 3.6 + 0.7
+   S = 9.3/10
+   ```
+
+**Kết luận:** Sim này rất phù hợp với người dùng (9.3/10)!
+
+---
+
+### 16.5. HIỂN THỊ BADGE TRÊN GIAO DIỆN
+
+#### Trang Kho Số
+```javascript
+// Sim chưa được phân tích
+suitabilityScore = 0
+```
+Badge hiển thị: **✨ S: 0**
+
+#### Trang Chủ (Sau khi AI phân tích)
+```javascript
+// Sim đã được tính toán
+suitabilityScore = 9.3
+```
+Badge hiển thị: **✨ S: 9.3**
+
+#### Màu sắc Badge
+```javascript
+<div className="bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+  <Sparkles className="w-4 h-4" />
+  <span>S: {suitabilityScore}</span>
+</div>
+```
+
+---
+
+### 16.6. GIẢI THÍCH CHO NGƯỜI DÙNG
+
+Khi hiển thị kết quả, hệ thống cung cấp **Explainable AI** (AI giải thích được):
+
+```javascript
+explainableAI = [
+  "Điểm nút sim là 8/10.",
+  "Chứa yếu tố chiêu tài tiến bảo.",
+  "Sim chứa 2 con số may mắn của bạn.",
+  "Đuôi sim chứa năm sinh 1995 của bạn."
+]
+```
+
+Người dùng sẽ thấy lý do cụ thể tại sao sim này phù hợp với họ.
+
+---
+
+### 16.7. CODE IMPLEMENTATION
+
+#### Backend API (`/api/recommend`)
+```javascript
+app.post('/api/recommend', async (req, res) => {
+  const { birthDate, luckyNumbers, priceLimit, expectedNetwork } = req.body;
+  
+  // Lấy sim từ database
+  const [rows] = await pool.query('SELECT * FROM sim_cards WHERE status = "Còn hàng"');
+  
+  // Tính điểm cho từng sim
+  const recommendations = rows.map(sim => {
+    let P = sim.total_nodes || 0; // Phong thủy
+    let I = 0; // Sở thích
+    let B = Math.floor(Math.random() * 5) + 5; // Hành vi
+    let explanations = [];
+    
+    // Tính P
+    if (['Sim thần tài', 'Sim lộc phát'].includes(sim.category)) {
+      P = Math.min(10, P + 2);
+      explanations.push('Chứa yếu tố chiêu tài tiến bảo.');
+    }
+    
+    // Tính I
+    if (luckyNumbers) {
+      luckyNumbers.forEach(num => {
+        if (sim.sim_number.includes(num)) {
+          I += 2;
+        }
+      });
+    }
+    
+    if (birthDate) {
+      const year = birthDate.split('-')[0];
+      if (sim.sim_number.endsWith(year)) {
+        I += 5;
+        explanations.push(`Đuôi sim chứa năm sinh ${year}.`);
+      }
+    }
+    
+    I = Math.min(10, I || 2);
+    
+    // Tính S
+    const S = (0.5 * P) + (0.4 * I) + (0.1 * B);
+    
+    return {
+      ...sim,
+      suitabilityScore: S.toFixed(2),
+      explainableAI: explanations
+    };
+  });
+  
+  // Sắp xếp theo điểm giảm dần
+  recommendations.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+  
+  res.json({ success: true, data: recommendations.slice(0, 10) });
+});
+```
+
+---
+
+### 16.8. LỢI ÍCH CỦA SUITABILITY SCORE
+
+1. **Cá nhân hóa:** Mỗi người dùng nhận được gợi ý sim khác nhau dựa trên thông tin cá nhân
+2. **Minh bạch:** Giải thích rõ ràng tại sao sim này phù hợp
+3. **Khoa học:** Kết hợp phong thủy truyền thống với thuật toán AI hiện đại
+4. **Tối ưu:** Giúp người dùng tìm sim phù hợp nhanh chóng, không phải xem hàng trăm sim
+
+---
+
+### 16.9. HƯỚNG PHÁT TRIỂN
+
+#### Cải tiến Behavior Point (B)
+- Lưu lịch sử xem sim của người dùng
+- Phân tích thời gian xem, số lần xem
+- Machine Learning để dự đoán sở thích
+
+#### Cải tiến Phong Thủy Point (P)
+- Tính toán chi tiết hơn về tương sinh/khắc
+- Phân tích theo giờ sinh (12 Giờ Địa Chi)
+- Kết hợp với Bát Tự (8 chữ)
+
+#### Cải tiến Interest Point (I)
+- Cho phép người dùng nhập nhiều thông tin hơn
+- Phân tích mục đích sử dụng sim
+- Gợi ý sim theo nghề nghiệp
+
+---
+
+## 📊 KẾT LUẬN
+
+Hệ thống **Suitability Score** là trái tim của tính năng AI phân tích sim, giúp người dùng tìm được sim số phù hợp nhất với bản thân một cách khoa học và minh bạch.
+
+**Công thức tổng quát:**
+```
+S = (0.5 × Phong_Thủy) + (0.4 × Sở_Thích) + (0.1 × Hành_Vi)
+```
+
+Điểm S càng cao, sim càng phù hợp với người dùng!
