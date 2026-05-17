@@ -355,6 +355,7 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên KH</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT KH</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
                   </tr>
@@ -377,16 +378,26 @@ export default function AdminPage() {
                           {purchase.payment_method === 'bank_transfer' ? 'Chuyển khoản' : 'COD'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white text-sm">
+                        {new Date(purchase.purchase_date).toLocaleString('vi-VN')}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          purchase.status === 'Đã duyệt' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : purchase.status === 'Đã hủy'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}>
-                          {purchase.status || 'Chờ duyệt'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                            purchase.status === 'Đã duyệt' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : purchase.status === 'Đã hủy'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {purchase.status || 'Chờ duyệt'}
+                          </span>
+                          {purchase.approval_date && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              {new Date(purchase.approval_date).toLocaleString('vi-VN')}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {purchase.status === 'Chờ duyệt' && (

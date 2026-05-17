@@ -255,8 +255,11 @@ app.put('/api/admin/purchases/:id/status', async (req, res) => {
     
     const purchase = purchases[0];
     
-    // Cập nhật status đơn hàng
-    await pool.query('UPDATE purchases SET status = ? WHERE id = ?', [status, id]);
+    // Cập nhật status đơn hàng và ngày duyệt/hủy
+    await pool.query(
+      'UPDATE purchases SET status = ?, approval_date = NOW() WHERE id = ?', 
+      [status, id]
+    );
     
     // Nếu hủy đơn, trả sim về kho (status = "Còn hàng")
     if (status === 'Đã hủy') {
