@@ -21,6 +21,17 @@ export default function Home() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const debounceTimer = useRef(null);
 
+  // Auto-fill birth date if user is logged in
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      const user = JSON.parse(userData);
+      if (user.birthDate) {
+        setFormData(prev => ({ ...prev, birthDate: user.birthDate }));
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

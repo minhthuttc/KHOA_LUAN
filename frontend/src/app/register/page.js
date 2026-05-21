@@ -1,22 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { UserPlus, Lock, User, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Lock, User, Eye, EyeOff, Calendar } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    birthDate: ""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [userSuggestions, setUserSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceTimer = useRef(null);
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, name: value });
+
+    // Clear previous timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer for debounce
+    debounceTimer.current = setTimeout(async () => {
+      if (value.length >= 2) {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/users/search?q=${value}`);
+          if (res.data.success) {
+            setUserSuggestions(res.data.users);
+            setShowSuggestions(true);
+          }
+        } catch (err) {
+          // Silently handle error
+          setShowSuggestions(false);
+        }
+      } else if (value.length === 0) {
+        setShowSuggestions(false);
+      } else {
+        setShowSuggestions(false);
+      }
+    }, 300); // Wait 300ms after user stops typing
+  };
+
+  const handleFocus = async () => {
+    // Only load users when focused, don't show error if fails
+    if (formData.name.length === 0) {
+      try {
+        const res = await axios.get('http://localhost:5000/api/users/all');
+        if (res.data.success && res.data.users.length > 0) {
+          setUserSuggestions(res.data.users);
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        // Silently handle error
+        setShowSuggestions(false);
+      }
+    } else if (formData.name.length >= 2 && userSuggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const selectUser = (username) => {
+    setFormData({ ...formData, name: username });
+    setShowSuggestions(false);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,7 +97,8 @@ export default function RegisterPage() {
     try {
       const res = await axios.post("http://localhost:5000/api/register", {
         name: formData.name,
-        password: formData.password
+        password: formData.password,
+        birthDate: formData.birthDate || null
       });
 
       if (res.data.success) {
@@ -75,7 +133,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <div>
+            <div className="relative">
               <label className="flex items-center gap-2 text-sm font-semibold mb-2 dark:text-gray-200">
                 <User className="w-4 h-4" />
                 Tên đăng nhập
@@ -84,11 +142,55 @@ export default function RegisterPage() {
                 type="text"
                 name="name"
                 value={formData.name}
-                onChange={handleChange}
+                onChange={handleNameChange}
+                onFocus={handleFocus}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 required
+                autoComplete="off"
                 className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:text-white"
                 placeholder="Nhập tên đăng nhập"
               />
+              
+              {/* Suggestions dropdown */}
+              {showSuggestions && userSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-dark-lighter border-2 border-primary rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {userSuggestions.map((user, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => selectUser(user.ten_dang_nhap)}
+                      className="w-full text-left px-4 py-3 hover:bg-primary/10 dark:hover:bg-primary/20 transition flex items-center gap-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    >
+                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold dark:text-white">{user.ten_dang_nhap}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.vai_tro === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold mb-2 dark:text-gray-200">
+                <Calendar className="w-4 h-4" />
+                Ngày sinh (tùy chọn)
+              </label>
+              <input
+                type="date"
+                name="birthDate"
+                value={formData.birthDate}
+                onChange={handleChange}
+                className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:text-white"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Giúp tự động điền thông tin khi phân tích phong thủy
+              </p>
             </div>
 
             <div>

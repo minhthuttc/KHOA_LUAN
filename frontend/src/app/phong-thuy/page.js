@@ -6,12 +6,34 @@ import axios from "axios";
 import Link from "next/link";
 
 export default function PhongThuyPage() {
+  const [viewMode, setViewMode] = useState(null); // 'self' or 'others'
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [gender, setGender] = useState(null);
   const [calendarType, setCalendarType] = useState(null);
   const [result, setResult] = useState(null);
   const [suggestedSims, setSuggestedSims] = useState([]);
+
+  const handleViewModeSelect = (mode) => {
+    setViewMode(mode);
+    
+    if (mode === 'self') {
+      // Auto-fill from user data if logged in
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.birthDate) {
+          setBirthDate(user.birthDate);
+        }
+      }
+    } else {
+      // Reset form for others
+      setBirthDate("");
+      setBirthTime("");
+      setGender(null);
+      setCalendarType(null);
+    }
+  };
 
   const calculateFengShui = async () => {
     if (!birthDate) {
@@ -505,37 +527,141 @@ export default function PhongThuyPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 mb-8 border border-gray-200 dark:border-gray-700">
-          <div className="space-y-6">
-            {/* Ngày sinh */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold mb-3 dark:text-gray-200">
-                <Calendar className="w-5 h-5 text-primary" />
-                Ngày tháng năm sinh
-              </label>
-              <input
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-            </div>
+        {/* Mode Selection */}
+        {!viewMode ? (
+          <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 mb-8 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-center dark:text-white mb-6">
+              Bạn muốn xem phong thủy cho ai?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Check if user is logged in */}
+              {(() => {
+                const userData = localStorage.getItem("user");
+                const isLoggedIn = !!userData;
+                
+                return (
+                  <>
+                    {isLoggedIn ? (
+                      <button
+                        onClick={() => handleViewModeSelect('self')}
+                        className="group relative overflow-hidden bg-gradient-to-br from-primary to-amber-500 hover:from-amber-500 hover:to-primary text-white rounded-xl p-8 transition-all duration-300 hover:shadow-2xl hover:scale-105"
+                      >
+                        <div className="relative z-10">
+                          <User className="w-16 h-16 mx-auto mb-4" />
+                          <h3 className="text-2xl font-bold mb-2">Xem cho bản thân</h3>
+                          <p className="text-sm opacity-90">
+                            Thông tin của bạn sẽ được tự động điền sẵn
+                          </p>
+                        </div>
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                      </button>
+                    ) : (
+                      <div className="relative overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8">
+                        <div className="text-center">
+                          <User className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                          <h3 className="text-2xl font-bold mb-2 text-gray-500 dark:text-gray-400">Xem cho bản thân</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            Vui lòng đăng nhập để sử dụng tính năng này
+                          </p>
+                          <a
+                            href="/login"
+                            className="inline-block bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-semibold transition"
+                          >
+                            Đăng nhập ngay
+                          </a>
+                        </div>
+                      </div>
+                    )}
 
-            {/* Giờ sinh */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold mb-3 dark:text-gray-200">
-                <Clock className="w-5 h-5 text-primary" />
-                Giờ sinh (không bắt buộc)
-              </label>
-              <input
-                type="time"
-                value={birthTime}
-                onChange={(e) => setBirthTime(e.target.value)}
-                className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Nhập giờ sinh để xem phân tích chi tiết hơn
-              </p>
+                    <button
+                      onClick={() => handleViewModeSelect('others')}
+                      className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 text-white rounded-xl p-8 transition-all duration-300 hover:shadow-2xl hover:scale-105"
+                    >
+                      <div className="relative z-10">
+                        <BookOpen className="w-16 h-16 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold mb-2">Xem cho người khác</h3>
+                        <p className="text-sm opacity-90">
+                          Nhập thông tin của người bạn muốn xem
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 mb-8 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold dark:text-white">
+                  {viewMode === 'self' ? '🙋 Xem cho bản thân' : '👥 Xem cho người khác'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setViewMode(null);
+                    setResult(null);
+                  }}
+                  className="text-sm text-primary hover:text-primary-hover font-medium"
+                >
+                  ← Quay lại
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Ngày sinh - Only show for 'others' mode */}
+                {viewMode === 'self' ? (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <Calendar className="w-5 h-5" />
+                      <div>
+                        <p className="font-semibold">Ngày sinh của bạn</p>
+                        <p className="text-sm">
+                          {birthDate ? new Date(birthDate).toLocaleDateString('vi-VN', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          }) : 'Chưa cập nhật trong hồ sơ'}
+                        </p>
+                      </div>
+                    </div>
+                    {!birthDate && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                        💡 Vui lòng cập nhật ngày sinh trong hồ sơ để sử dụng tính năng này
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold mb-3 dark:text-gray-200">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      Ngày tháng năm sinh
+                    </label>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                )}
+
+                {/* Giờ sinh */}
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-3 dark:text-gray-200">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Giờ sinh (không bắt buộc)
+                  </label>
+                  <input
+                    type="time"
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Nhập giờ sinh để xem phân tích chi tiết hơn
+                  </p>
             </div>
 
             {/* Giới tính */}
@@ -620,6 +746,8 @@ export default function PhongThuyPage() {
             </div>
           </div>
         </div>
+        </>
+        )}
 
         {result && (
           <div id="result-section" className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">

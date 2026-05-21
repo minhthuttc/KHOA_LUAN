@@ -150,7 +150,7 @@ app.get('/api/sims', async (req, res) => {
 // API đăng ký
 app.post('/api/register', async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { name, password, birthDate } = req.body;
     
     // Kiểm tra tên đã tồn tại
     const [existing] = await pool.query('SELECT * FROM nguoi_dung WHERE ten_dang_nhap = ?', [name]);
@@ -160,8 +160,8 @@ app.post('/api/register', async (req, res) => {
     
     // Thêm user mới
     await pool.query(
-      'INSERT INTO nguoi_dung (ten_dang_nhap, mat_khau, vai_tro) VALUES (?, ?, ?)',
-      [name, password, 'customer']
+      'INSERT INTO nguoi_dung (ten_dang_nhap, mat_khau, vai_tro, ngay_sinh) VALUES (?, ?, ?, ?)',
+      [name, password, 'customer', birthDate || null]
     );
     
     res.json({ success: true, message: 'Đăng ký thành công' });
@@ -183,16 +183,59 @@ app.post('/api/login', async (req, res) => {
     }
     
     const user = users[0];
+    
+    // Format birthDate to YYYY-MM-DD if exists
+    let formattedBirthDate = null;
+    if (user.ngay_sinh) {
+      const date = new Date(user.ngay_sinh);
+      formattedBirthDate = date.toISOString().split('T')[0];
+    }
+    
     res.json({
       success: true,
       user: {
         id: user.ma_nguoi_dung,
         name: user.ten_dang_nhap,
-        role: user.vai_tro
+        role: user.vai_tro,
+        birthDate: formattedBirthDate
       }
     });
   } catch (error) {
     console.error('Error in /api/login:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API get all users for login suggestions
+app.get('/api/users/all', async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      'SELECT ten_dang_nhap, vai_tro FROM nguoi_dung ORDER BY ten_dang_nhap LIMIT 20'
+    );
+    
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Error in /api/users/all:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API search users for login suggestions
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+      return res.json({ success: true, users: [] });
+    }
+    
+    const [users] = await pool.query(
+      'SELECT ten_dang_nhap, vai_tro FROM nguoi_dung WHERE ten_dang_nhap LIKE ? LIMIT 10',
+      [`%${q}%`]
+    );
+    
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Error in /api/users/search:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });
