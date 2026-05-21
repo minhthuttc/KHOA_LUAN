@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, Sparkles, User, BookOpen } from "lucide-react";
+import { Calendar, Clock, Sparkles, User, BookOpen, Phone } from "lucide-react";
 import axios from "axios";
+import Link from "next/link";
 
 export default function PhongThuyPage() {
   const [birthDate, setBirthDate] = useState("");
@@ -10,6 +11,7 @@ export default function PhongThuyPage() {
   const [gender, setGender] = useState(null);
   const [calendarType, setCalendarType] = useState(null);
   const [result, setResult] = useState(null);
+  const [suggestedSims, setSuggestedSims] = useState([]);
 
   const calculateFengShui = async () => {
     if (!birthDate) {
@@ -112,6 +114,31 @@ export default function PhongThuyPage() {
     } catch (error) {
       console.error("Error saving fengshui history:", error);
       // Không hiển thị lỗi cho user, chỉ log
+    }
+
+    // Fetch sim suggestions based on lucky numbers
+    try {
+      const response = await axios.get("http://localhost:5000/api/sims");
+      if (response.data.success) {
+        // Filter sims that contain lucky numbers
+        const filtered = response.data.data
+          .filter(sim => {
+            const simStr = sim.so_sim || '';
+            return luckyNumbers.some(num => simStr.includes(num.toString()));
+          })
+          .slice(0, 6) // Get top 6 sims
+          .map(sim => ({
+            ...sim,
+            sim_number: sim.so_sim,
+            network: sim.nha_mang,
+            price: sim.gia_ban,
+            category: sim.loai_sim,
+            status: sim.trang_thai
+          }));
+        setSuggestedSims(filtered);
+      }
+    } catch (error) {
+      console.error("Error fetching sim suggestions:", error);
     }
 
     // Scroll xuống kết quả
@@ -684,6 +711,49 @@ export default function PhongThuyPage() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Sim suggestions based on lucky numbers */}
+                {suggestedSims.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-green-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-md font-semibold dark:text-white flex items-center gap-2">
+                        <Phone className="w-5 h-5 text-primary" />
+                        Sim phù hợp với số may mắn của bạn
+                      </h4>
+                      <Link 
+                        href="/kho-so"
+                        className="text-sm text-primary hover:text-primary-hover font-medium"
+                      >
+                        Xem thêm →
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {suggestedSims.map((sim, idx) => (
+                        <Link
+                          key={idx}
+                          href="/kho-so"
+                          className="bg-white dark:bg-gray-700 rounded-lg p-3 hover:shadow-lg transition-shadow border border-green-200 dark:border-gray-600"
+                        >
+                          <div className="text-center">
+                            <p className="text-primary font-bold text-lg mb-1">
+                              {sim.sim_number?.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3")}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{sim.network}</p>
+                            <p className="text-sm font-semibold text-red-500">
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(sim.price)}
+                            </p>
+                            {sim.status === 'Đã bán' && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Đã đặt</span>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-3 italic">
+                      💡 Các sim này chứa số may mắn của bạn, giúp tăng cường vận khí tốt lành
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Màu sắc may mắn */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Search, Loader2, Sparkles } from "lucide-react";
+import { Search, Loader2, Sparkles, MessageSquare, RotateCcw } from "lucide-react";
 import SimCard from "@/components/SimCard";
 
 export default function Home() {
@@ -41,7 +41,17 @@ export default function Home() {
 
       const res = await axios.post("http://localhost:5000/api/recommend", payload);
       if (res.data.success) {
-        setRecommendations(res.data.data);
+        // Map dữ liệu từ backend sang format mà SimCard component cần
+        const mappedData = res.data.data.map(sim => ({
+          ...sim,
+          sim_number: sim.so_sim,
+          network: sim.nha_mang,
+          price: sim.gia_ban,
+          category: sim.loai_sim,
+          status: sim.trang_thai,
+          description: sim.mo_ta
+        }));
+        setRecommendations(mappedData);
         
         // Lưu lịch sử phân tích nhu cầu
         try {
@@ -110,7 +120,16 @@ export default function Home() {
 
       const res = await axios.post("http://localhost:5000/api/recommend", payload);
       if (res.data.success) {
-        setPurposeSuggestions(res.data.data.slice(0, 4)); // Chỉ hiển thị 4 sim gợi ý
+        const mappedData = res.data.data.map(sim => ({
+          ...sim,
+          sim_number: sim.so_sim,
+          network: sim.nha_mang,
+          price: sim.gia_ban,
+          category: sim.loai_sim,
+          status: sim.trang_thai,
+          description: sim.mo_ta
+        }));
+        setPurposeSuggestions(mappedData.slice(0, 4)); // Chỉ hiển thị 4 sim gợi ý
       }
     } catch (err) {
       console.error("Error fetching purpose suggestions:", err);
@@ -126,7 +145,7 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-20 lg:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex items-center py-12">
         {/* Animated background effects */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-yellow-500/30 to-amber-600/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -134,142 +153,183 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-full blur-[80px]"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+          <div className="animate-fade-in text-center mb-8">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 leading-tight">
               TÌM KIẾM <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 bg-clip-text text-transparent">SIM SỐ ĐẸP</span> BẰNG AI
             </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl font-light leading-relaxed">
+            <p className="text-base md:text-lg text-gray-300 mb-6 max-w-3xl mx-auto font-light leading-relaxed">
               Nhập ngày sinh, sở thích và mục đích sử dụng. AI sẽ phân tích ngũ hành, tổng nút và gợi ý chiếc SIM phù hợp nhất với bạn.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 md:p-8 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in" style={{animationDelay: '0.2s'}}>
-            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-              <Search className="text-primary" /> Phân tích nhu cầu
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Ngày sinh (YYYY-MM-DD)</label>
-                <input
-                  type="date"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Con số yêu thích (Cách bằng dấu phẩy)</label>
-                <input
-                  type="text"
-                  name="luckyNumbers"
-                  placeholder="Vd: 39, 79, 68"
-                  value={formData.luckyNumbers}
-                  onChange={handleChange}
-                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Mục đích sử dụng sim - Bên trái */}
+            <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in" style={{animationDelay: '0.2s'}}>
+              <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                <MessageSquare className="text-primary" /> Mục đích sử dụng sim
+              </h2>
+              <form onSubmit={handleSubmit}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Nhà mạng mong muốn</label>
-                  <select
-                    name="expectedNetwork"
-                    value={formData.expectedNetwork}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Mô tả mục đích</label>
+                  <textarea
+                    rows="6"
+                    name="purpose"
+                    value={formData.purpose}
                     onChange={handleChange}
-                    className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition appearance-none"
-                  >
-                    <option value="">Tất cả nhà mạng</option>
-                    <option value="Viettel">Viettel</option>
-                    <option value="Vinaphone">Vinaphone</option>
-                    <option value="Mobifone">Mobifone</option>
-                  </select>
+                    placeholder="Ví dụ: Kinh doanh, cá nhân, muốn số đẹp mang lại may mắn..."
+                    className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none"
+                  ></textarea>
+                  <p className="text-xs text-gray-400 mt-1">
+                    💡 Mô tả mục đích sử dụng sim của bạn
+                  </p>
                 </div>
-                
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, purpose: '' }));
+                      setPurposeSuggestions([]);
+                      setSearched(false);
+                      setRecommendations([]);
+                    }}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg py-3 rounded-xl transition-all flex justify-center items-center gap-2"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    Làm mới
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-[2] bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
+                  </button>
+                </div>
+
+                {/* Gợi ý sim theo mục đích */}
+                {loadingSuggestions && (
+                  <div className="mt-4 flex items-center gap-2 text-gray-300">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Đang phân tích mục đích của bạn...</span>
+                  </div>
+                )}
+
+                {purposeSuggestions.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Gợi ý sim phù hợp với mục đích của bạn:
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {purposeSuggestions.map((sim) => (
+                        <div key={sim.sim_number || sim.id_sim || Math.random()} className="bg-dark-lighter/50 border border-gray-700 rounded-lg p-3">
+                          <p className="text-primary font-bold text-lg">{sim.sim_number}</p>
+                          <p className="text-xs text-gray-400">{sim.network}</p>
+                          <p className="text-sm text-white font-semibold mt-1">
+                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(sim.price)}
+                          </p>
+                          <p className="text-xs text-amber-400 mt-1">⭐ Điểm: {sim.suitabilityScore}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            {/* Form phân tích nhu cầu - Bên phải */}
+            <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in" style={{animationDelay: '0.4s'}}>
+              <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
+                <Search className="text-primary" /> Phân tích nhu cầu
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Ngân sách tối đa: <span className="text-primary font-bold">{formatPrice(formData.priceLimit)}</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Ngày sinh (YYYY-MM-DD)</label>
                   <input
-                    type="range"
-                    name="priceLimit"
-                    min="500000"
-                    max="5000000"
-                    step="500000"
-                    value={formData.priceLimit}
+                    type="date"
+                    name="birthDate"
+                    value={formData.birthDate}
                     onChange={handleChange}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary mt-3"
+                    className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                   />
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-6"
-              >
-                {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
-              </button>
-            </form>
-          </div>
-
-          {/* Mục đích sử dụng sim - Tách riêng */}
-          <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 md:p-8 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in mt-6" style={{animationDelay: '0.4s'}}>
-            <form onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Mục đích sử dụng sim</label>
-                <textarea
-                  rows="4"
-                  name="purpose"
-                  value={formData.purpose}
-                  onChange={handleChange}
-                  placeholder="Ví dụ: Kinh doanh, cá nhân, muốn số đẹp mang lại may mắn..."
-                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none"
-                ></textarea>
-                <p className="text-xs text-gray-400 mt-1">
-                  💡 Gõ từ 10 ký tự trở lên để xem gợi ý sim phù hợp
-                </p>
-              </div>
-
-              {/* Gợi ý sim theo mục đích */}
-              {loadingSuggestions && (
-                <div className="mt-4 flex items-center gap-2 text-gray-300">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Đang phân tích mục đích của bạn...</span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Con số yêu thích (Cách bằng dấu phẩy)</label>
+                  <input
+                    type="text"
+                    name="luckyNumbers"
+                    placeholder="Vd: 39, 79, 68"
+                    value={formData.luckyNumbers}
+                    onChange={handleChange}
+                    className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                  />
                 </div>
-              )}
 
-              {purposeSuggestions.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    Gợi ý sim phù hợp với mục đích của bạn:
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {purposeSuggestions.map((sim) => (
-                      <div key={sim.sim_number || sim.id_sim || Math.random()} className="bg-dark-lighter/50 border border-gray-700 rounded-lg p-3">
-                        <p className="text-primary font-bold text-lg">{sim.sim_number}</p>
-                        <p className="text-xs text-gray-400">{sim.network}</p>
-                        <p className="text-sm text-white font-semibold mt-1">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(sim.price)}
-                        </p>
-                        <p className="text-xs text-amber-400 mt-1">⭐ Điểm: {sim.suitabilityScore}</p>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Nhà mạng mong muốn</label>
+                    <select
+                      name="expectedNetwork"
+                      value={formData.expectedNetwork}
+                      onChange={handleChange}
+                      className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition appearance-none"
+                    >
+                      <option value="">Tất cả nhà mạng</option>
+                      <option value="Viettel">Viettel</option>
+                      <option value="Vinaphone">Vinaphone</option>
+                      <option value="Mobifone">Mobifone</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Ngân sách tối đa: <span className="text-primary font-bold">{formatPrice(formData.priceLimit)}</span>
+                    </label>
+                    <input
+                      type="range"
+                      name="priceLimit"
+                      min="500000"
+                      max="5000000"
+                      step="500000"
+                      value={formData.priceLimit}
+                      onChange={handleChange}
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary mt-3"
+                    />
                   </div>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-6"
-              >
-                {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
-              </button>
-            </form>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        birthDate: "",
+                        luckyNumbers: "",
+                        priceLimit: 5000000,
+                        expectedNetwork: "",
+                        purpose: ""
+                      });
+                      setSearched(false);
+                      setRecommendations([]);
+                    }}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg py-3 rounded-xl transition-all flex justify-center items-center gap-2"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    Làm mới
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-[2] bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
@@ -306,8 +366,8 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {recommendations.map((sim) => (
-                <SimCard key={sim.id} sim={sim} />
+              {recommendations.map((sim, index) => (
+              <SimCard key={`rec-${sim.id}-${index}`} sim={sim} />
               ))}
             </div>
           )}

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, CheckCircle2, ChevronRight, X, CreditCard, User, Phone, MapPin } from "lucide-react";
+import { Sparkles, CheckCircle2, ChevronRight, X, CreditCard, User, Phone, MapPin, Info } from "lucide-react";
 import axios from "axios";
 
 export default function SimCard({ sim }) {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState({
     fullName: "",
     phone: "",
@@ -28,9 +29,207 @@ export default function SimCard({ sim }) {
     interestPoint
   } = sim;
 
+  // Generate detailed description for modal
+  const getDetailedDescription = () => {
+    const simStr = sim_number || '';
+    const cleanStr = simStr.replace(/\D/g, ''); // Remove non-digits
+    let desc = [];
+    
+    // Intro with specific number
+    desc.push(`📞 Số sim ${formatPhone(sim_number)} thuộc nhà mạng ${network}`);
+    
+    // Analyze number patterns in detail
+    const patterns = [];
+    const features = [];
+    
+    // Check for quad repeating (4+ same digits)
+    const quadMatch = cleanStr.match(/(\d)\1{3,}/);
+    if (quadMatch) {
+      const digit = quadMatch[1];
+      const count = quadMatch[0].length;
+      patterns.push(`có ${count} số ${digit} liên tiếp - cực kỳ hiếm và đẹp mắt`);
+      features.push('Số lặp quý hiếm');
+    }
+    // Check for triple repeating
+    else if (/(\d)\1{2}/.test(cleanStr)) {
+      const tripleMatch = cleanStr.match(/(\d)\1{2}/);
+      patterns.push(`chứa bộ ba số ${tripleMatch[1]} (${tripleMatch[0]}) - dễ nhớ, ấn tượng`);
+      features.push('Số đôi đẹp');
+    }
+    
+    // Check for ascending sequences
+    const ascendingPatterns = ['0123', '1234', '2345', '3456', '4567', '5678', '6789'];
+    for (const pattern of ascendingPatterns) {
+      if (cleanStr.includes(pattern)) {
+        patterns.push(`có dãy số tăng dần ${pattern.split('').join('-')} - biểu tượng của sự phát triển, thăng tiến trong sự nghiệp`);
+        features.push('Dãy tăng dần');
+        break;
+      }
+    }
+    
+    // Check for descending sequences
+    const descendingPatterns = ['9876', '8765', '7654', '6543', '5432', '4321', '3210'];
+    for (const pattern of descendingPatterns) {
+      if (cleanStr.includes(pattern)) {
+        patterns.push(`có dãy số giảm dần ${pattern.split('').join('-')} - thu hút tài lộc, vượng khí về nhà`);
+        features.push('Dãy giảm dần');
+        break;
+      }
+    }
+    
+    // Check for mirror/palindrome
+    if (cleanStr.length >= 4) {
+      const last4 = cleanStr.slice(-4);
+      if (last4 === last4.split('').reverse().join('')) {
+        patterns.push(`có đuôi đối xứng ${last4.split('').join('-')} - hài hòa, cân bằng`);
+        features.push('Số đối xứng');
+      }
+    }
+    
+    // Lucky numbers analysis
+    const luckyDetails = [];
+    const count6 = (cleanStr.match(/6/g) || []).length;
+    const count8 = (cleanStr.match(/8/g) || []).length;
+    const count9 = (cleanStr.match(/9/g) || []).length;
+    
+    if (count6 >= 2) {
+      luckyDetails.push(`${count6} số 6 (Lục Lộc - may mắn, thuận lợi)`);
+      features.push('Số 6 phong thủy');
+    }
+    if (count8 >= 2) {
+      luckyDetails.push(`${count8} số 8 (Phát Tài - giàu có, thịnh vượng)`);
+      features.push('Số 8 phát tài');
+    }
+    if (count9 >= 2) {
+      luckyDetails.push(`${count9} số 9 (Cửu Quý - trường tồn, bền vững)`);
+      features.push('Số 9 cửu quý');
+    }
+    
+    if (luckyDetails.length > 0) {
+      patterns.push(`chứa ${luckyDetails.join(', ')} - những con số vàng trong phong thủy Á Đông`);
+    }
+    
+    // Check for year patterns (birth year)
+    const yearMatch = cleanStr.match(/(19\d{2}|20\d{2})/);
+    if (yearMatch) {
+      patterns.push(`có năm sinh ${yearMatch[0]} - đặc biệt ý nghĩa cho người sinh năm này`);
+      features.push(`Năm sinh ${yearMatch[0]}`);
+    }
+    
+    // Build main description
+    if (patterns.length > 0) {
+      desc.push(`\n\n🌟 Đặc điểm nổi bật:\n${patterns.map((p, i) => `${i + 1}. Sim ${p}`).join('\n')}`);
+    } else {
+      desc.push('\n\n🌟 Đặc điểm:\nSim có số đẹp, dễ nhớ, phù hợp cho nhiều mục đích sử dụng.');
+    }
+    
+    // Category benefits
+    if (category) {
+      desc.push(`\n\n📱 Phân loại: ${category}`);
+      if (category.toLowerCase().includes('thần tài') || category.toLowerCase().includes('lộc phát')) {
+        desc.push('→ Sim phong thủy cao cấp, được các chuyên gia phong thủy khuyên dùng cho người làm kinh doanh, mang lại tài lộc và may mắn.');
+      } else if (category.toLowerCase().includes('năm sinh')) {
+        desc.push('→ Sim mang năm sinh, tạo sự kết nối đặc biệt với chủ nhân, tăng cường vận may và sự thuận lợi.');
+      }
+    }
+    
+    // Price positioning
+    desc.push(`\n\n💰 Giá bán: ${formatPrice(price)}`);
+    if (price < 1000000) {
+      desc.push('→ Mức giá cực kỳ hợp lý, phù hợp với mọi đối tượng. Đây là cơ hội tốt để sở hữu sim đẹp với chi phí thấp.');
+    } else if (price < 2000000) {
+      desc.push('→ Mức giá tốt, cân đối giữa chất lượng số và giá trị. Phù hợp cho người muốn sim đẹp với ngân sách vừa phải.');
+    } else if (price < 5000000) {
+      desc.push('→ Mức giá trung cao, xứng đáng với độ đẹp và ý nghĩa của sim. Thích hợp cho người có nhu cầu sim chất lượng.');
+    } else {
+      desc.push('→ Sim cao cấp, thể hiện đẳng cấp và sự khác biệt. Dành cho những người thành đạt, muốn khẳng định vị thế.');
+    }
+    
+    // Usage recommendations based on actual features
+    desc.push('\n\n✨ Phù hợp cho:');
+    const useCases = [];
+    
+    if (features.includes('Số 8 phát tài') || features.includes('Số 6 phong thủy') || category?.toLowerCase().includes('thần tài')) {
+      useCases.push('🏢 Doanh nhân, chủ doanh nghiệp - mang lại tài lộc');
+      useCases.push('💼 Người làm kinh doanh, buôn bán - thu hút khách hàng');
+    }
+    
+    if (features.includes('Dãy tăng dần')) {
+      useCases.push('📈 Người muốn thăng tiến trong sự nghiệp');
+    }
+    
+    if (yearMatch) {
+      useCases.push(`🎂 Người sinh năm ${yearMatch[0]} - sim mang năm sinh`);
+      useCases.push('🎁 Quà tặng sinh nhật ý nghĩa');
+    }
+    
+    if (features.includes('Số lặp quý hiếm') || features.includes('Số đối xứng')) {
+      useCases.push('⭐ Người yêu thích sim độc đáo, khác biệt');
+    }
+    
+    useCases.push('📱 Sử dụng cá nhân hàng ngày');
+    useCases.push('💝 Làm quà tặng cho người thân, đối tác');
+    
+    desc.push(useCases.join('\n'));
+    
+    // Network benefits
+    desc.push(`\n\n📡 Ưu điểm nhà mạng ${network}:`);
+    const networkBenefits = {
+      'Viettel': '• Phủ sóng rộng nhất Việt Nam\n• Tốc độ 4G/5G ổn định\n• Nhiều gói cước ưu đãi',
+      'Vinaphone': '• Chất lượng cuộc gọi tốt\n• Mạng lưới ổn định\n• Dịch vụ khách hàng chuyên nghiệp',
+      'Mobifone': '• Thương hiệu lâu đời, uy tín\n• Chất lượng đường truyền tốt\n• Gói cước đa dạng'
+    };
+    desc.push(networkBenefits[network] || '• Chất lượng mạng ổn định\n• Dịch vụ chăm sóc khách hàng tốt');
+    
+    // Closing
+    desc.push('\n\n🎁 Cam kết:\n• Sim chính chủ, đầy đủ giấy tờ\n• Hỗ trợ đổi sim miễn phí nếu có vấn đề\n• Giao sim tận nơi, thanh toán khi nhận hàng');
+    
+    return desc.join('');
+  };
+
+  // Generate short description based on sim characteristics
+  const getShortDescription = () => {
+    const simStr = sim_number || '';
+    const parts = [];
+    
+    // Check for repeating patterns
+    if (/(\d)\1{2,}/.test(simStr)) {
+      parts.push('Số có dãy lặp đẹp');
+    }
+    
+    // Check for ascending/descending
+    if (/(?:0123|1234|2345|3456|4567|5678|6789)/.test(simStr)) {
+      parts.push('dãy số tăng dần');
+    }
+    
+    // Check for lucky numbers
+    if (/[68]{2,}/.test(simStr)) {
+      parts.push('chứa số may mắn 6-8');
+    }
+    
+    // Check category
+    if (category?.includes('thần tài') || category?.includes('lộc phát')) {
+      parts.push('sim phong thủy');
+    }
+    
+    // Check price range
+    if (price < 1000000) {
+      parts.push('giá tốt');
+    } else if (price > 3000000) {
+      parts.push('sim cao cấp');
+    }
+    
+    // Build description
+    if (parts.length > 0) {
+      return `${parts.join(', ')}. Phù hợp cho mọi nhu cầu sử dụng, dễ nhớ và tiện lợi.`;
+    }
+    
+    return 'Sim đẹp, giá tốt, phù hợp cho mọi nhu cầu sử dụng. Số dễ nhớ, tiện lợi cho việc liên lạc hàng ngày.';
+  };
+
   // Format phone number (e.g. 098 123 4567)
   const formatPhone = (num) => {
-    return num.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3");
+    return num?.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3") || num;
   };
 
   // Format price
@@ -40,9 +239,9 @@ export default function SimCard({ sim }) {
 
   // Determine network color
   const getNetworkBg = (net) => {
-    if (net.toLowerCase() === 'viettel') return 'bg-red-500';
-    if (net.toLowerCase() === 'vinaphone') return 'bg-blue-500';
-    if (net.toLowerCase() === 'mobifone') return 'bg-red-600';
+    if (net?.toLowerCase() === 'viettel') return 'bg-red-500';
+    if (net?.toLowerCase() === 'vinaphone') return 'bg-blue-500';
+    if (net?.toLowerCase() === 'mobifone') return 'bg-red-600';
     return 'bg-gray-500';
   };
 
@@ -169,23 +368,19 @@ export default function SimCard({ sim }) {
               Vui lòng chọn sim khác
             </p>
           </div>
-        ) : description ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-4">
-            {description}
-          </p>
-        ) : explainableAI && explainableAI.length > 0 ? (
-          <ul className="space-y-2">
-            {explainableAI.slice(0, 3).map((reason) => (
-              <li key={reason} className="flex items-start text-sm text-gray-600 dark:text-gray-400 gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                <span className="line-clamp-2">{reason}</span>
-              </li>
-            ))}
-          </ul>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-500 italic">
-            Sim đẹp, giá tốt, phù hợp cho mọi nhu cầu sử dụng.
-          </p>
+          <>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              {getShortDescription()}
+            </p>
+            <button
+              onClick={() => setShowDetailModal(true)}
+              className="mt-3 text-primary hover:text-primary-hover text-sm font-medium flex items-center gap-1"
+            >
+              <Info className="w-4 h-4" />
+              Xem chi tiết
+            </button>
+          </>
         )}
       </div>
 
@@ -352,6 +547,99 @@ export default function SimCard({ sim }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Detail Modal */}
+    {showDetailModal && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-dark-lighter rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          {/* Header */}
+          <div className="sticky top-0 bg-white dark:bg-dark-lighter border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+            <h2 className="text-2xl font-bold dark:text-white">Chi tiết sim {formatPhone(sim_number)}</h2>
+            <button
+              onClick={() => setShowDetailModal(false)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"
+            >
+              <X className="w-6 h-6 dark:text-white" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 space-y-6">
+            {/* Sim Info */}
+            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-6 border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Số sim</p>
+                  <p className="text-3xl font-bold text-primary">{formatPhone(sim_number)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Giá bán</p>
+                  <p className="text-2xl font-bold text-red-500">{formatPrice(price)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400">Nhà mạng</p>
+                  <p className="font-semibold dark:text-white">{network}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400">Loại sim</p>
+                  <p className="font-semibold dark:text-white">{category}</p>
+                </div>
+              </div>
+              {suitabilityScore && (
+                <div className="mt-4 flex items-center gap-2 bg-white dark:bg-dark rounded-lg p-3">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="text-sm dark:text-gray-300">Điểm phù hợp: <span className="font-bold text-primary">{suitabilityScore}</span></span>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className="text-lg font-bold dark:text-white mb-3">Mô tả chi tiết</h3>
+              <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                {description || getDetailedDescription()}
+              </div>
+            </div>
+
+            {/* Explainable AI */}
+            {explainableAI && explainableAI.length > 0 && (
+              <div>
+                <h3 className="text-lg font-bold dark:text-white mb-3 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  Phân tích AI
+                </h3>
+                <ul className="space-y-3">
+                  {explainableAI.map((reason, index) => (
+                    <li key={index} className="flex items-start gap-3 bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                      <span className="text-gray-700 dark:text-gray-300">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-white dark:bg-dark-lighter border-t border-gray-200 dark:border-gray-700 p-6">
+            <button
+              onClick={() => {
+                setShowDetailModal(false);
+                if (status !== 'Đã bán') {
+                  handleOpenModal();
+                }
+              }}
+              disabled={status === 'Đã bán'}
+              className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {status === 'Đã bán' ? 'Sim đã được đặt' : 'Mua ngay'}
+            </button>
           </div>
         </div>
       </div>
