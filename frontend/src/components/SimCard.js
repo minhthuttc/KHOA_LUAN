@@ -175,8 +175,8 @@ export default function SimCard({ sim }) {
           </p>
         ) : explainableAI && explainableAI.length > 0 ? (
           <ul className="space-y-2">
-            {explainableAI.slice(0, 3).map((reason, idx) => (
-              <li key={idx} className="flex items-start text-sm text-gray-600 dark:text-gray-400 gap-2">
+            {explainableAI.slice(0, 3).map((reason) => (
+              <li key={reason} className="flex items-start text-sm text-gray-600 dark:text-gray-400 gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                 <span className="line-clamp-2">{reason}</span>
               </li>

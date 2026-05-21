@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Sparkles } from "lucide-react";
 import SimCard from "@/components/SimCard";
 
 export default function Home() {
@@ -17,6 +17,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [purposeSuggestions, setPurposeSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const debounceTimer = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,6 +66,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error fetching AI recommendations:", err);
+      alert("⚠️ Lỗi kết nối!\n\nKhông thể kết nối đến server backend.\nVui lòng kiểm tra:\n1. Backend đã chạy chưa? (node backend/index.js)\n2. Server đang chạy ở port 5000?\n3. Kết nối mạng ổn định?");
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
@@ -71,6 +76,47 @@ export default function Home() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Nếu người dùng gõ vào ô "Mục đích sử dụng", tự động gợi ý sim với debounce
+    if (name === "purpose") {
+      // Xóa timer cũ
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      
+      if (value.trim().length > 10) {
+        // Đợi 800ms sau khi người dùng ngừng gõ mới gọi API
+        debounceTimer.current = setTimeout(() => {
+          fetchPurposeSuggestions(value);
+        }, 800);
+      } else {
+        setPurposeSuggestions([]);
+        setLoadingSuggestions(false);
+      }
+    }
+  };
+
+  // Hàm gợi ý sim dựa trên mục đích
+  const fetchPurposeSuggestions = async (purposeText) => {
+    setLoadingSuggestions(true);
+    try {
+      const payload = {
+        ...formData,
+        purpose: purposeText,
+        luckyNumbers: formData.luckyNumbers
+          ? formData.luckyNumbers.split(",").map((n) => n.trim())
+          : [],
+      };
+
+      const res = await axios.post("http://localhost:5000/api/recommend", payload);
+      if (res.data.success) {
+        setPurposeSuggestions(res.data.data.slice(0, 4)); // Chỉ hiển thị 4 sim gợi ý
+      }
+    } catch (err) {
+      console.error("Error fetching purpose suggestions:", err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
   };
 
   const formatPrice = (p) => {
@@ -126,18 +172,6 @@ export default function Home() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Mục đích sử dụng sim</label>
-                <textarea
-                  rows="3"
-                  name="purpose"
-                  value={formData.purpose}
-                  onChange={handleChange}
-                  placeholder="Ví dụ: Kinh doanh, cá nhân, muốn số đẹp mang lại may mắn..."
-                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none"
-                ></textarea>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Nhà mạng mong muốn</label>
@@ -174,7 +208,64 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-4"
+                className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-6"
+              >
+                {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
+              </button>
+            </form>
+          </div>
+
+          {/* Mục đích sử dụng sim - Tách riêng */}
+          <div className="bg-white/10 backdrop-blur-xl border border-yellow-500/20 p-6 md:p-8 rounded-3xl shadow-2xl shadow-yellow-500/10 animate-fade-in mt-6" style={{animationDelay: '0.4s'}}>
+            <form onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Mục đích sử dụng sim</label>
+                <textarea
+                  rows="4"
+                  name="purpose"
+                  value={formData.purpose}
+                  onChange={handleChange}
+                  placeholder="Ví dụ: Kinh doanh, cá nhân, muốn số đẹp mang lại may mắn..."
+                  className="w-full bg-dark-lighter border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none"
+                ></textarea>
+                <p className="text-xs text-gray-400 mt-1">
+                  💡 Gõ từ 10 ký tự trở lên để xem gợi ý sim phù hợp
+                </p>
+              </div>
+
+              {/* Gợi ý sim theo mục đích */}
+              {loadingSuggestions && (
+                <div className="mt-4 flex items-center gap-2 text-gray-300">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Đang phân tích mục đích của bạn...</span>
+                </div>
+              )}
+
+              {purposeSuggestions.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Gợi ý sim phù hợp với mục đích của bạn:
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {purposeSuggestions.map((sim) => (
+                      <div key={sim.sim_number || sim.id_sim || Math.random()} className="bg-dark-lighter/50 border border-gray-700 rounded-lg p-3">
+                        <p className="text-primary font-bold text-lg">{sim.sim_number}</p>
+                        <p className="text-xs text-gray-400">{sim.network}</p>
+                        <p className="text-sm text-white font-semibold mt-1">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(sim.price)}
+                        </p>
+                        <p className="text-xs text-amber-400 mt-1">⭐ Điểm: {sim.suitabilityScore}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 mt-6"
               >
                 {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
               </button>
