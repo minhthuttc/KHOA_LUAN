@@ -275,7 +275,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {sims.map((sim) => (
-                    <tr key={sim.id}>
+                    <tr key={sim.ma_sim || sim.id}>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white font-mono">{sim.sim_number}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{sim.network}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{Number(sim.price).toLocaleString('vi-VN')} đ</td>
@@ -291,7 +291,7 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleDeleteSim(sim.id)}
+                          onClick={() => handleDeleteSim(sim.ma_sim || sim.id)}
                           className="text-red-600 hover:text-red-800 dark:text-red-400"
                         >
                           <Trash2 className="w-5 h-5" />

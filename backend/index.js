@@ -124,7 +124,7 @@ app.get('/api/sims', async (req, res) => {
     // Thêm suitabilityScore mặc định cho kho sim
     const simsWithScore = rows.map(sim => ({
       ...sim,
-      id: sim.id_sim,
+      id: sim.ma_sim,
       sim_number: sim.so_sim,
       network: sim.nha_mang,
       price: sim.gia_ban,
