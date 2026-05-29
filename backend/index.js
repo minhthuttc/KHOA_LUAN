@@ -133,6 +133,7 @@ app.get('/api/sims', async (req, res) => {
       total_nodes: sim.diem_nut,
       status: sim.trang_thai,
       description: sim.mo_ta,
+      search_count: sim.so_lan_tim_kiem || 0,
       suitabilityScore: 0,
       explainableAI: []
     }));
@@ -144,6 +145,31 @@ app.get('/api/sims', async (req, res) => {
   } catch (error) {
     console.error('Error in /api/sims:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// API tăng số lần tìm kiếm sim
+app.put('/api/sims/:id/increment-search', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE the_sim SET so_lan_tim_kiem = so_lan_tim_kiem + 1 WHERE ma_sim = ?', [id]);
+    res.json({ success: true, message: 'Đã cập nhật lượt tìm kiếm' });
+  } catch (error) {
+    console.error('Error incrementing search:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy thống kê tìm kiếm sim (admin)
+app.get('/api/admin/sim-search-stats', async (req, res) => {
+  try {
+    const [stats] = await pool.query(
+      'SELECT ma_sim as id, so_sim as sim_number, nha_mang as network, gia_ban as price, menh_phong_thuy as feng_shui_element, diem_nut as total_nodes, so_lan_tim_kiem as search_count, trang_thai as status FROM the_sim WHERE so_lan_tim_kiem > 0 ORDER BY so_lan_tim_kiem DESC LIMIT 20'
+    );
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Error getting search stats:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });
 
@@ -183,6 +209,11 @@ app.post('/api/login', async (req, res) => {
     }
     
     const user = users[0];
+    
+    // Kiểm tra tài khoản bị khóa
+    if (user.trang_thai === 'locked') {
+      return res.status(403).json({ success: false, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ admin để mở khóa.' });
+    }
     
     // Format birthDate to YYYY-MM-DD if exists
     let formattedBirthDate = null;
@@ -243,10 +274,28 @@ app.get('/api/users/search', async (req, res) => {
 // API lấy danh sách users (admin only)
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT ma_nguoi_dung as id, ten_dang_nhap as name, vai_tro as role, ngay_tao as created_at FROM nguoi_dung ORDER BY ngay_tao DESC');
+    const [users] = await pool.query('SELECT ma_nguoi_dung as id, ten_dang_nhap as name, vai_tro as role, ngay_tao as created_at, trang_thai as status FROM nguoi_dung ORDER BY ngay_tao DESC');
     res.json({ success: true, data: users });
   } catch (error) {
     console.error('Error in /api/admin/users:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API khóa/mở khóa tài khoản (admin)
+app.put('/api/admin/users/:id/toggle-lock', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [users] = await pool.query('SELECT trang_thai FROM nguoi_dung WHERE ma_nguoi_dung = ?', [id]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy user' });
+    }
+    const currentStatus = users[0].trang_thai || 'active';
+    const newStatus = currentStatus === 'active' ? 'locked' : 'active';
+    await pool.query('UPDATE nguoi_dung SET trang_thai = ? WHERE ma_nguoi_dung = ?', [newStatus, id]);
+    res.json({ success: true, message: newStatus === 'locked' ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản', status: newStatus });
+  } catch (error) {
+    console.error('Error toggle lock:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });

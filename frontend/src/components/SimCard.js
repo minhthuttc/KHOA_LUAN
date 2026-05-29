@@ -374,7 +374,17 @@ export default function SimCard({ sim }) {
               {getShortDescription()}
             </p>
             <button
-              onClick={() => setShowDetailModal(true)}
+              onClick={async () => {
+                setShowDetailModal(true);
+                try {
+                  const simId = sim.id || sim.ma_sim;
+                  if (simId) {
+                    await axios.put(`http://localhost:5000/api/sims/${simId}/increment-search`);
+                  }
+                } catch (err) {
+                  // silent fail
+                }
+              }}
               className="mt-3 text-primary hover:text-primary-hover text-sm font-medium flex items-center gap-1"
             >
               <Info className="w-4 h-4" />

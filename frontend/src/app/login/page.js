@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { LogIn, User, Lock, Eye, EyeOff } from "lucide-react";
+import { LogIn, User, Lock, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -126,8 +126,20 @@ export default function LoginPage() {
         <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
-                {error}
+              <div className={`px-4 py-3 rounded-lg border ${
+                error.includes('khóa') 
+                  ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+              }`}>
+                <div className="flex items-start gap-2">
+                  {error.includes('khóa') && <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />}
+                  <div>
+                    <p className="font-semibold">{error}</p>
+                    {error.includes('khóa') && (
+                      <p className="text-sm mt-1 opacity-80">Vui lòng liên hệ Admin qua trang Liên hệ để được hỗ trợ mở khóa.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Users, Package, Trash2, Plus, ShoppingCart, Sparkles, Search, MessageSquare } from "lucide-react";
+import { Users, Package, Trash2, Plus, ShoppingCart, Sparkles, Search, MessageSquare, BarChart3, Lock, Unlock } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function AdminPage() {
   const [fengshuiHistory, setFengshuiHistory] = useState([]);
   const [recommendationHistory, setRecommendationHistory] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [searchStats, setSearchStats] = useState([]);
   const [activeTab, setActiveTab] = useState("sims");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSim, setNewSim] = useState({
@@ -43,13 +45,14 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, simsRes, purchasesRes, fengshuiRes, recommendationRes, messagesRes] = await Promise.all([
+      const [usersRes, simsRes, purchasesRes, fengshuiRes, recommendationRes, messagesRes, searchStatsRes] = await Promise.all([
         axios.get("http://localhost:5000/api/admin/users"),
         axios.get("http://localhost:5000/api/sims"),
         axios.get("http://localhost:5000/api/admin/purchases"),
         axios.get("http://localhost:5000/api/admin/fengshui-history"),
         axios.get("http://localhost:5000/api/admin/recommendation-history"),
-        axios.get("http://localhost:5000/api/admin/messages")
+        axios.get("http://localhost:5000/api/admin/messages"),
+        axios.get("http://localhost:5000/api/admin/sim-search-stats")
       ]);
 
       setUsers(usersRes.data.data);
@@ -58,6 +61,7 @@ export default function AdminPage() {
       setFengshuiHistory(fengshuiRes.data.data);
       setRecommendationHistory(recommendationRes.data.data);
       setMessages(messagesRes.data.data);
+      setSearchStats(searchStatsRes.data.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -185,6 +189,7 @@ export default function AdminPage() {
             <MessageSquare className="w-5 h-5" />
             Tin nhắn liên hệ ({messages.filter(m => m.status === 'Chưa đọc').length})
           </button>
+
         </div>
 
         {/* Content */}
@@ -261,6 +266,76 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* Thống kê tổng quát */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Biểu đồ theo nhà mạng */}
+              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Sim theo nhà mạng
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={(() => {
+                    const counts = {};
+                    sims.forEach(s => { counts[s.network] = (counts[s.network] || 0) + 1; });
+                    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip formatter={(value) => [`${value} sim`, 'Số lượng']} />
+                    <Bar dataKey="value" fill="#d97706" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Biểu đồ theo mệnh */}
+              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Sim theo mệnh
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={(() => {
+                    const counts = {};
+                    sims.forEach(s => { counts[s.feng_shui_element] = (counts[s.feng_shui_element] || 0) + 1; });
+                    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip formatter={(value) => [`${value} sim`, 'Số lượng']} />
+                    <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Biểu đồ sim được xem nhiều nhất */}
+              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Sim được xem nhiều nhất
+                </h3>
+                {searchStats.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={searchStats.slice(0, 10)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="sim_number" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={60} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value) => [`${value} lượt`, 'Số lần xem']} />
+                      <Bar dataKey="search_count" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[250px] text-gray-400 dark:text-gray-500">
+                    <BarChart3 className="w-12 h-12 mb-3 opacity-40" />
+                    <p>Chưa có lượt xem</p>
+                    <p className="text-sm">Khi khách hàng xem chi tiết sim sẽ có dữ liệu</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
@@ -316,6 +391,7 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vai trò</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày tạo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -332,6 +408,46 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">
                         {new Date(u.created_at).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {u.role === 'admin' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                            Hoạt động
+                          </span>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const action = u.status === 'locked' ? 'mở khóa' : 'khóa';
+                              if (!confirm(`Bạn có chắc muốn ${action} tài khoản "${u.name}"?`)) return;
+                              try {
+                                await axios.put(`http://localhost:5000/api/admin/users/${u.id}/toggle-lock`);
+                                alert(`Đã ${action} tài khoản "${u.name}"`);
+                                fetchData();
+                              } catch (error) {
+                                alert('Có lỗi xảy ra!');
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-all hover:scale-105 hover:shadow-md border ${
+                              u.status === 'locked'
+                                ? 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50'
+                                : 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50'
+                            }`}
+                            title={u.status === 'locked' ? 'Bấm để mở khóa' : 'Bấm để khóa tài khoản'}
+                          >
+                            {u.status === 'locked' ? (
+                              <>
+                                <Lock className="w-3 h-3" />
+                                Đã khóa
+                              </>
+                            ) : (
+                              <>
+                                <Unlock className="w-3 h-3" />
+                                Hoạt động
+                              </>
+                            )}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
