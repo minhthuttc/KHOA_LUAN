@@ -212,14 +212,17 @@ app.post('/api/login', async (req, res) => {
     
     // Kiểm tra tài khoản bị khóa
     if (user.trang_thai === 'locked') {
-      return res.status(403).json({ success: false, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ admin để mở khóa.' });
+      return res.status(403).json({ success: false, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ người quản trị để mở khóa.' });
     }
     
-    // Format birthDate to YYYY-MM-DD if exists
+    // Format birthDate to YYYY-MM-DD if exists (local timezone)
     let formattedBirthDate = null;
     if (user.ngay_sinh) {
       const date = new Date(user.ngay_sinh);
-      formattedBirthDate = date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      formattedBirthDate = `${year}-${month}-${day}`;
     }
     
     res.json({
@@ -374,23 +377,23 @@ app.put('/api/admin/purchases/:id/status', async (req, res) => {
   }
 });
 
-// API mua sim (lưu lịch sử)
-app.post('/api/purchase', async (req, res) => {
+// API hủy đơn hàng theo số sim (admin)
+app.put('/api/admin/purchases/cancel-by-sim', async (req, res) => {
   try {
-    const { user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method } = req.body;
-    
-    // Lưu lịch sử mua hàng
-    await pool.query(
-      'INSERT INTO don_hang (ma_nguoi_dung, ten_nguoi_dung, so_sim, nha_mang, gia_mua, loai_sim, ten_khach_hang, sdt_khach_hang, dia_chi_khach_hang, phuong_thuc_thanh_toan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [user_id, user_name, sim_number, network, price, category, customer_name, customer_phone, customer_address, payment_method]
+    const { sim_number } = req.body;
+    const [purchases] = await pool.query(
+      "SELECT * FROM don_hang WHERE so_sim = ? AND trang_thai IN ('Chờ duyệt', 'Đã duyệt') ORDER BY ngay_mua DESC LIMIT 1",
+      [sim_number]
     );
-    
-    // Đổi status sim thành "Đã bán" thay vì xóa
-    await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Đã bán', sim_number]);
-    
-    res.json({ success: true, message: 'Đã lưu lịch sử mua sim và cập nhật trạng thái' });
+    if (purchases.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng active cho sim này' });
+    }
+    const purchase = purchases[0];
+    await pool.query('UPDATE don_hang SET trang_thai = ?, ngay_duyet = NOW() WHERE ma_don_hang = ?', ['Đã hủy', purchase.ma_don_hang]);
+    await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Còn hàng', sim_number]);
+    res.json({ success: true, message: 'Đã hủy đơn hàng và trả sim về kho' });
   } catch (error) {
-    console.error('Error in /api/purchase:', error);
+    console.error('Error cancel by sim:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });

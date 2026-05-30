@@ -555,7 +555,23 @@ export default function AdminPage() {
                           </div>
                         )}
                         {purchase.status === 'Đã duyệt' && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Đã xử lý</span>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Hủy đơn hàng đã duyệt sim ${purchase.sim_number}? Sim sẽ được trả về kho.`)) return;
+                              try {
+                                await axios.put(`http://localhost:5000/api/admin/purchases/${purchase.id}/status`, {
+                                  status: 'Đã hủy'
+                                });
+                                alert('Đã hủy đơn hàng và trả sim về kho!');
+                                fetchData();
+                              } catch (error) {
+                                alert('Có lỗi xảy ra!');
+                              }
+                            }}
+                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold transition"
+                          >
+                            Hủy đơn
+                          </button>
                         )}
                         {purchase.status === 'Đã hủy' && (
                           <span className="text-xs text-gray-500 dark:text-gray-400">Đã hủy</span>

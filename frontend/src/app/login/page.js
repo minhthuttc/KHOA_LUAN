@@ -136,7 +136,7 @@ export default function LoginPage() {
                   <div>
                     <p className="font-semibold">{error}</p>
                     {error.includes('khóa') && (
-                      <p className="text-sm mt-1 opacity-80">Vui lòng liên hệ Admin qua trang Liên hệ để được hỗ trợ mở khóa.</p>
+                      <p className="text-sm mt-1 opacity-80">Vui lòng liên hệ người quản trị qua trang Liên hệ để được hỗ trợ mở khóa.</p>
                     )}
                   </div>
                 </div>

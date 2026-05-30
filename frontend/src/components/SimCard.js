@@ -396,12 +396,39 @@ export default function SimCard({ sim }) {
 
       {/* CTA Button */}
       {status === 'Đã bán' ? (
-        <button 
-          disabled
-          className="w-full mt-6 bg-gray-400 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 z-10 cursor-not-allowed opacity-60"
-        >
-          Đã có người đặt
-        </button>
+        (() => {
+          const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+          const isAdmin = userData && JSON.parse(userData).role === 'admin';
+          if (isAdmin) {
+            return (
+              <button 
+                onClick={async () => {
+                  if (!confirm(`Hủy đơn hàng sim ${sim_number}? Sim sẽ trả về kho.`)) return;
+                  try {
+                    await axios.put('http://localhost:5000/api/admin/purchases/cancel-by-sim', {
+                      sim_number
+                    });
+                    alert('Đã hủy đơn hàng và trả sim về kho!');
+                    window.location.reload();
+                  } catch (err) {
+                    alert(err.response?.data?.message || 'Có lỗi xảy ra!');
+                  }
+                }}
+                className="w-full mt-6 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 z-10 shadow-md hover:shadow-lg"
+              >
+                Hủy đơn
+              </button>
+            );
+          }
+          return (
+            <button 
+              disabled
+              className="w-full mt-6 bg-gray-400 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 z-10 cursor-not-allowed opacity-60"
+            >
+              Đã có người đặt
+            </button>
+          );
+        })()
       ) : (
         <button 
           onClick={handleOpenModal}
