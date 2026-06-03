@@ -428,6 +428,40 @@ app.get('/api/admin/purchases', async (req, res) => {
   }
 });
 
+// API lấy lịch sử của user cụ thể
+app.get('/api/user/:userId/history', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const [purchases] = await pool.query(
+      'SELECT ma_don_hang as id, ma_nguoi_dung as user_id, ten_nguoi_dung as user_name, so_sim as sim_number, nha_mang as network, gia_mua as price, loai_sim as category, ten_khach_hang as customer_name, sdt_khach_hang as customer_phone, dia_chi_khach_hang as customer_address, phuong_thuc_thanh_toan as payment_method, ngay_mua as purchase_date, trang_thai as status, ngay_duyet as approval_date FROM don_hang WHERE ma_nguoi_dung = ? ORDER BY ngay_mua DESC',
+      [userId]
+    );
+    
+    const [fengshui] = await pool.query(
+      'SELECT ma_lich_su as id, ma_nguoi_dung as user_id, ten_nguoi_dung as user_name, ngay_sinh as birth_date, gio_sinh as birth_time, gioi_tinh as gender, loai_lich as calendar_type, menh as element, so_may_man as lucky_numbers, ngay_xem as view_date FROM lich_su_phong_thuy WHERE ma_nguoi_dung = ? ORDER BY ngay_xem DESC',
+      [userId]
+    );
+    
+    const [recommendations] = await pool.query(
+      'SELECT ma_lich_su as id, ma_nguoi_dung as user_id, ten_nguoi_dung as user_name, ngay_sinh as birth_date, so_may_man as lucky_numbers, ngan_sach as price_limit, nha_mang_mong_muon as expected_network, muc_dich as purpose, so_ket_qua as result_count, ngay_tim_kiem as search_date FROM lich_su_phan_tich WHERE ma_nguoi_dung = ? ORDER BY ngay_tim_kiem DESC',
+      [userId]
+    );
+    
+    res.json({ 
+      success: true, 
+      data: {
+        purchases,
+        fengshui,
+        recommendations
+      }
+    });
+  } catch (error) {
+    console.error('Error in /api/user/:userId/history:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 // API lấy lịch sử xem phong thủy (admin)
 app.get('/api/admin/fengshui-history', async (req, res) => {
   try {

@@ -18,6 +18,12 @@ export default function AdminPage() {
   const [searchStats, setSearchStats] = useState([]);
   const [activeTab, setActiveTab] = useState("sims");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userHistory, setUserHistory] = useState({
+    purchases: [],
+    fengshui: [],
+    recommendations: []
+  });
   const [newSim, setNewSim] = useState({
     sim_number: "",
     network: "Viettel",
@@ -101,6 +107,26 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       alert("Lỗi khi xóa sim");
+    }
+  };
+
+  const handleViewUserHistory = async (userId, userName) => {
+    try {
+      // Lấy lịch sử của user cụ thể
+      const userPurchases = purchases.filter(p => p.user_id === userId);
+      const userFengshui = fengshuiHistory.filter(f => f.user_id === userId);
+      const userRecommendations = recommendationHistory.filter(r => r.user_id === userId);
+      
+      setUserHistory({
+        purchases: userPurchases,
+        fengshui: userFengshui,
+        recommendations: userRecommendations
+      });
+      
+      setSelectedUser({ id: userId, name: userName });
+    } catch (error) {
+      console.error("Error fetching user history:", error);
+      alert("Lỗi khi tải lịch sử người dùng");
     }
   };
 
@@ -396,7 +422,11 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {users.map((u) => (
-                    <tr key={u.id}>
+                    <tr 
+                      key={u.id}
+                      onClick={() => handleViewUserHistory(u.id, u.name)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">{u.id}</td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white font-semibold">{u.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -765,6 +795,137 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* Modal lịch sử người dùng */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUser(null)}>
+          <div className="bg-white dark:bg-dark-lighter rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-primary text-white px-6 py-4 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Lịch sử hoạt động</h2>
+                <p className="text-sm opacity-90">Người dùng: {selectedUser.name}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="text-white hover:bg-white/20 rounded-full p-2 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+              {/* Đơn hàng */}
+              <div className="mb-8">
+                <h3 className="text-xl font-bold dark:text-white mb-4 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-primary" />
+                  Đơn hàng ({userHistory.purchases.length})
+                </h3>
+                {userHistory.purchases.length > 0 ? (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300">Số Sim</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300">Giá</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300">Trạng thái</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300">Ngày mua</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                        {userHistory.purchases.map((p) => (
+                          <tr key={p.id}>
+                            <td className="px-4 py-3 dark:text-white font-mono">{p.sim_number}</td>
+                            <td className="px-4 py-3 dark:text-white">{Number(p.price).toLocaleString('vi-VN')} đ</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                p.status === 'Đã duyệt' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : p.status === 'Đã hủy'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {p.status || 'Chờ duyệt'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 dark:text-white text-sm">
+                              {new Date(p.purchase_date).toLocaleDateString('vi-VN')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">Chưa có đơn hàng nào</p>
+                )}
+              </div>
+
+              {/* Lịch sử phong thủy */}
+              <div className="mb-8">
+                <h3 className="text-xl font-bold dark:text-white mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  Lịch sử xem phong thủy ({userHistory.fengshui.length})
+                </h3>
+                {userHistory.fengshui.length > 0 ? (
+                  <div className="grid gap-3">
+                    {userHistory.fengshui.map((f) => (
+                      <div key={f.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="dark:text-white"><strong>Mệnh:</strong> <span className="text-primary font-semibold">{f.element}</span></p>
+                            <p className="dark:text-white text-sm"><strong>Số may mắn:</strong> {f.lucky_numbers}</p>
+                            <p className="dark:text-white text-sm"><strong>Giới tính:</strong> {f.gender === 'male' ? 'Nam' : 'Nữ'}</p>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(f.view_date).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">Chưa xem phong thủy</p>
+                )}
+              </div>
+
+              {/* Lịch sử phân tích AI */}
+              <div>
+                <h3 className="text-xl font-bold dark:text-white mb-4 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary" />
+                  Lịch sử phân tích AI ({userHistory.recommendations.length})
+                </h3>
+                {userHistory.recommendations.length > 0 ? (
+                  <div className="grid gap-3">
+                    {userHistory.recommendations.map((r) => (
+                      <div key={r.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="dark:text-white"><strong>Mục đích:</strong> {r.purpose || 'Không có'}</p>
+                            <div className="flex gap-4 text-sm dark:text-gray-300 mt-1">
+                              <span><strong>Ngân sách:</strong> {r.price_limit ? Number(r.price_limit).toLocaleString('vi-VN') + ' đ' : 'Không giới hạn'}</span>
+                              <span><strong>Nhà mạng:</strong> {r.expected_network || 'Tất cả'}</span>
+                            </div>
+                            <p className="text-sm dark:text-gray-300"><strong>Kết quả:</strong> {r.result_count} sim</p>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(r.search_date).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">Chưa có lịch sử phân tích</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
