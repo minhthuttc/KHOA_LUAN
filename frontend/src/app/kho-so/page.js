@@ -21,8 +21,10 @@ export default function KhoSoPage() {
     try {
       const res = await axios.get("http://localhost:5000/api/sims");
       if (res.data.success) {
-        setSims(res.data.data);
-        setFilteredSims(res.data.data);
+        // Chỉ hiển thị sim còn hàng trong kho
+        const availableSims = res.data.data.filter(sim => sim.status === 'Còn hàng');
+        setSims(availableSims);
+        setFilteredSims(availableSims);
       }
     } catch (err) {
       console.error("Error fetching sims:", err);

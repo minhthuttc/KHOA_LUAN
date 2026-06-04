@@ -28,8 +28,10 @@ export default function AdminPage() {
     sim_number: "",
     network: "Viettel",
     price: "",
+    category: "Sim số đẹp",
     feng_shui_element: "Kim",
-    total_nodes: 5
+    total_nodes: 5,
+    description: ""
   });
 
   useEffect(() => {
@@ -75,26 +77,45 @@ export default function AdminPage() {
 
   const handleAddSim = async (e) => {
     e.preventDefault();
+    
+    // Validation giá
+    const price = parseInt(newSim.price);
+    if (price < 1000) {
+      alert("❌ Giá sim phải từ 1,000đ trở lên!");
+      return;
+    }
+    if (price > 5000000) {
+      alert("❌ Giá sim không được vượt quá 5,000,000đ!");
+      return;
+    }
+    
     try {
-      // Tự động tạo category
       const simData = {
-        ...newSim,
-        category: "Sim số đẹp"
+        sim_number: newSim.sim_number,
+        network: newSim.network,
+        price: price,
+        category: newSim.category,
+        feng_shui_element: newSim.feng_shui_element,
+        total_nodes: parseInt(newSim.total_nodes),
+        description: newSim.description || null
       };
       
       await axios.post("http://localhost:5000/api/admin/sims", simData);
-      alert("Thêm sim thành công!");
+      alert("✅ Thêm sim thành công vào kho!");
       setShowAddForm(false);
       setNewSim({
         sim_number: "",
         network: "Viettel",
         price: "",
+        category: "Sim số đẹp",
         feng_shui_element: "Kim",
-        total_nodes: 5
+        total_nodes: 5,
+        description: ""
       });
       fetchData();
     } catch (error) {
-      alert("Lỗi khi thêm sim");
+      const errorMsg = error.response?.data?.message || "Lỗi khi thêm sim";
+      alert(`❌ ${errorMsg}`);
     }
   };
 
@@ -233,61 +254,163 @@ export default function AdminPage() {
             </div>
 
             {showAddForm && (
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold mb-4 dark:text-white">Thêm Sim Mới</h3>
-                <form onSubmit={handleAddSim} className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Số sim"
-                    value={newSim.sim_number}
-                    onChange={(e) => setNewSim({...newSim, sim_number: e.target.value})}
-                    required
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
-                  />
-                  <select
-                    value={newSim.network}
-                    onChange={(e) => setNewSim({...newSim, network: e.target.value})}
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
-                  >
-                    <option>Viettel</option>
-                    <option>Vinaphone</option>
-                    <option>Mobifone</option>
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Giá (VNĐ)"
-                    value={newSim.price}
-                    onChange={(e) => setNewSim({...newSim, price: e.target.value})}
-                    required
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
-                  />
-                  <select
-                    value={newSim.feng_shui_element}
-                    onChange={(e) => setNewSim({...newSim, feng_shui_element: e.target.value})}
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white"
-                  >
-                    <option value="Kim">Mệnh Kim</option>
-                    <option value="Mộc">Mệnh Mộc</option>
-                    <option value="Thủy">Mệnh Thủy</option>
-                    <option value="Hỏa">Mệnh Hỏa</option>
-                    <option value="Thổ">Mệnh Thổ</option>
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Điểm nút (1-10)"
-                    value={newSim.total_nodes}
-                    onChange={(e) => setNewSim({...newSim, total_nodes: e.target.value})}
-                    min="1"
-                    max="10"
-                    required
-                    className="px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white col-span-2"
-                  />
-                  <button
-                    type="submit"
-                    className="col-span-2 bg-primary hover:bg-primary-hover text-white py-2 rounded-lg font-semibold"
-                  >
-                    Thêm Sim
-                  </button>
+              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                <h3 className="text-lg font-bold mb-4 dark:text-white">📱 Thêm Sim Mới Vào Kho</h3>
+                <form onSubmit={handleAddSim} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Số sim */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">Số sim *</label>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: 0912341991"
+                      value={newSim.sim_number}
+                      onChange={(e) => setNewSim({...newSim, sim_number: e.target.value})}
+                      required
+                      pattern="\d{10}"
+                      maxLength="10"
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Nhập đúng 10 chữ số</p>
+                  </div>
+
+                  {/* Nhà mạng */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">Nhà mạng *</label>
+                    <select
+                      value={newSim.network}
+                      onChange={(e) => setNewSim({...newSim, network: e.target.value})}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary"
+                    >
+                      <option>Viettel</option>
+                      <option>Vinaphone</option>
+                      <option>Mobifone</option>
+                    </select>
+                  </div>
+
+                  {/* Giá */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">
+                      Giá bán (VNĐ) *
+                      <span className="text-xs text-gray-500 font-normal ml-2">Từ 1k → 5 triệu</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Ví dụ: 500000"
+                      value={newSim.price}
+                      onChange={(e) => setNewSim({...newSim, price: e.target.value})}
+                      required
+                      min="1000"
+                      max="5000000"
+                      step="1000"
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💰 Giá trị phải từ 1,000đ đến 5,000,000đ
+                    </p>
+                  </div>
+
+                  {/* Loại sim */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">Loại sim *</label>
+                    <select
+                      value={newSim.category}
+                      onChange={(e) => setNewSim({...newSim, category: e.target.value})}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="Sim số đẹp">Sim số đẹp</option>
+                      <option value="Sim tam hoa">Sim tam hoa</option>
+                      <option value="Sim tứ quý">Sim tứ quý</option>
+                      <option value="Sim thần tài">Sim thần tài</option>
+                      <option value="Sim lộc phát">Sim lộc phát</option>
+                      <option value="Sim năm sinh">Sim năm sinh</option>
+                      <option value="Sim dễ nhớ">Sim dễ nhớ</option>
+                      <option value="Sim ngày sinh">Sim ngày sinh</option>
+                    </select>
+                  </div>
+
+                  {/* Mệnh phong thủy */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">Mệnh phong thủy *</label>
+                    <select
+                      value={newSim.feng_shui_element}
+                      onChange={(e) => setNewSim({...newSim, feng_shui_element: e.target.value})}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="Kim">🟡 Mệnh Kim</option>
+                      <option value="Mộc">🟢 Mệnh Mộc</option>
+                      <option value="Thủy">🔵 Mệnh Thủy</option>
+                      <option value="Hỏa">🔴 Mệnh Hỏa</option>
+                      <option value="Thổ">🟤 Mệnh Thổ</option>
+                    </select>
+                  </div>
+
+                  {/* Điểm nút */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">
+                      Điểm nút phong thủy (1-10) * 
+                      <span className="text-xs text-gray-500 font-normal ml-2">Càng cao càng tốt</span>
+                    </label>
+                    <input
+                      type="range"
+                      value={newSim.total_nodes}
+                      onChange={(e) => setNewSim({...newSim, total_nodes: e.target.value})}
+                      min="1"
+                      max="10"
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <span>1 (Kém)</span>
+                      <span className="text-lg font-bold text-primary">{newSim.total_nodes}/10</span>
+                      <span>10 (Tuyệt vời)</span>
+                    </div>
+                  </div>
+
+                  {/* Chi tiết về sim */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold mb-2 dark:text-gray-300">
+                      Chi tiết về sim (tùy chọn)
+                      <span className="text-xs text-gray-500 font-normal ml-2">Mô tả đặc điểm, ý nghĩa của sim</span>
+                    </label>
+                    <textarea
+                      value={newSim.description}
+                      onChange={(e) => setNewSim({...newSim, description: e.target.value})}
+                      placeholder="Ví dụ: Sim tam hoa đuôi 999, mang ý nghĩa trường tồn vĩnh cửu. Phù hợp với người mệnh Kim, hỗ trợ tài lộc và sự nghiệp phát triển..."
+                      rows="4"
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-dark dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary resize-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      📝 Viết mô tả chi tiết về sim để khách hàng hiểu rõ hơn về giá trị và ý nghĩa
+                    </p>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="md:col-span-2 flex gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddForm(false);
+                        setNewSim({
+                          sim_number: "",
+                          network: "Viettel",
+                          price: "",
+                          category: "Sim số đẹp",
+                          feng_shui_element: "Kim",
+                          total_nodes: 5,
+                          description: ""
+                        });
+                      }}
+                      className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-white py-3 rounded-lg font-semibold shadow-lg transition flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Thêm Sim Vào Kho
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
@@ -340,15 +463,25 @@ export default function AdminPage() {
               <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-primary" />
-                  Sim được xem nhiều nhất
+                  Sim được xem nhiều nhất (Top 20)
                 </h3>
                 {searchStats.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={searchStats.slice(0, 10)}>
+                    <BarChart data={searchStats.slice(0, 20)}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="sim_number" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={60} />
+                      <XAxis 
+                        dataKey="sim_number" 
+                        tick={{ fontSize: 9 }} 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={70}
+                        interval={0}
+                      />
                       <YAxis allowDecimals={false} />
-                      <Tooltip formatter={(value) => [`${value} lượt`, 'Số lần xem']} />
+                      <Tooltip 
+                        formatter={(value) => [`${value} lượt`, 'Số lần xem']}
+                        labelFormatter={(label) => `Sim: ${label}`}
+                      />
                       <Bar dataKey="search_count" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -371,6 +504,7 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Mệnh</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Điểm nút</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Lượt xem</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
                   </tr>
                 </thead>
@@ -388,6 +522,11 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white">
                         <span className="px-3 py-1 bg-primary/20 text-primary rounded-full font-semibold">
                           {sim.total_nodes}/10
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap dark:text-white">
+                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-semibold text-sm">
+                          {sim.search_count || 0} lượt
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

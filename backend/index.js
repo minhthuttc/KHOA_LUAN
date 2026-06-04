@@ -250,6 +250,53 @@ app.put('/api/sims/:id/increment-search', async (req, res) => {
   }
 });
 
+// API mua sim (tạo đơn hàng)
+app.post('/api/purchase', async (req, res) => {
+  try {
+    const { 
+      user_id, 
+      user_name, 
+      sim_number, 
+      network, 
+      price, 
+      category,
+      customer_name,
+      customer_phone,
+      customer_address,
+      payment_method
+    } = req.body;
+
+    // Kiểm tra sim còn hàng không
+    const [simCheck] = await pool.query('SELECT trang_thai FROM the_sim WHERE so_sim = ?', [sim_number]);
+    if (simCheck.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy sim' });
+    }
+    if (simCheck[0].trang_thai === 'Đã bán') {
+      return res.status(400).json({ success: false, message: 'Sim đã được đặt mua' });
+    }
+
+    // Tạo đơn hàng
+    await pool.query(
+      `INSERT INTO don_hang (ma_nguoi_dung, ten_nguoi_dung, so_sim, nha_mang, gia_mua, loai_sim, 
+       ten_khach_hang, sdt_khach_hang, dia_chi_khach_hang, phuong_thuc_thanh_toan, trang_thai) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, user_name, sim_number, network, price, category, 
+       customer_name, customer_phone, customer_address, payment_method, 'Chờ duyệt']
+    );
+
+    // Cập nhật trạng thái sim thành "Đã bán"
+    await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Đã bán', sim_number]);
+
+    res.json({ 
+      success: true, 
+      message: 'Đặt mua sim thành công! Chúng tôi sẽ liên hệ với bạn sớm.' 
+    });
+  } catch (error) {
+    console.error('Error in /api/purchase:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server khi tạo đơn hàng' });
+  }
+});
+
 // API lấy thống kê tìm kiếm sim (admin)
 app.get('/api/admin/sim-search-stats', async (req, res) => {
   try {
@@ -396,11 +443,11 @@ app.put('/api/admin/users/:id/toggle-lock', async (req, res) => {
 // API quản lý sim (admin)
 app.post('/api/admin/sims', async (req, res) => {
   try {
-    const { sim_number, network, price, category, feng_shui_element, total_nodes } = req.body;
+    const { sim_number, network, price, category, feng_shui_element, total_nodes, description } = req.body;
     
     await pool.query(
-      'INSERT INTO the_sim (so_sim, nha_mang, gia_ban, loai_sim, menh_phong_thuy, diem_nut, trang_thai) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [sim_number, network, price, category, feng_shui_element, total_nodes, 'Còn hàng']
+      'INSERT INTO the_sim (so_sim, nha_mang, gia_ban, loai_sim, menh_phong_thuy, diem_nut, trang_thai, mo_ta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [sim_number, network, price, category, feng_shui_element, total_nodes, 'Còn hàng', description || null]
     );
     
     res.json({ success: true, message: 'Thêm sim thành công' });
@@ -638,6 +685,128 @@ app.put('/api/admin/messages/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });
+
+// ==================== WEBHOOK API ====================
+
+// API webhook nhận thông báo từ ngân hàng (Vietcombank, VietQR, etc.)
+app.post('/api/webhook/bank-transfer', async (req, res) => {
+  try {
+    console.log('📥 Webhook nhận thông báo chuyển khoản:', req.body);
+    
+    const {
+      transactionId,      // ID giao dịch từ ngân hàng
+      amount,             // Số tiền
+      description,        // Nội dung chuyển khoản
+      accountNumber,      // STK nhận tiền
+      transactionDate,    // Ngày giao dịch
+      bankCode           // Mã ngân hàng
+    } = req.body;
+
+    // Kiểm tra STK có đúng không
+    if (accountNumber !== '1025311193') {
+      console.log('⚠️ STK không khớp:', accountNumber);
+      return res.status(400).json({ success: false, message: 'Số tài khoản không đúng' });
+    }
+
+    // Trích xuất số sim từ nội dung chuyển khoản
+    // Ví dụ: "MUA SO 0912341991" hoặc "MUA SO 091 234 1991"
+    const simMatch = description?.match(/MUA SO[:\s]*(\d{10}|\d{3}\s*\d{3}\s*\d{4})/i);
+    if (!simMatch) {
+      console.log('⚠️ Không tìm thấy số sim trong nội dung:', description);
+      return res.status(400).json({ success: false, message: 'Không tìm thấy số sim trong nội dung chuyển khoản' });
+    }
+
+    const simNumber = simMatch[1].replace(/\s/g, ''); // Loại bỏ khoảng trắng
+
+    // Tìm đơn hàng chờ duyệt
+    const [orders] = await pool.query(
+      `SELECT * FROM don_hang 
+       WHERE so_sim = ? 
+       AND trang_thai = 'Chờ duyệt' 
+       AND phuong_thuc_thanh_toan = 'bank_transfer'
+       ORDER BY ngay_mua DESC 
+       LIMIT 1`,
+      [simNumber]
+    );
+
+    if (orders.length === 0) {
+      console.log('⚠️ Không tìm thấy đơn hàng chờ duyệt cho sim:', simNumber);
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+
+    const order = orders[0];
+
+    // Kiểm tra số tiền có khớp không (cho phép sai số 1000đ)
+    if (Math.abs(amount - order.gia_mua) > 1000) {
+      console.log(`⚠️ Số tiền không khớp. Nhận: ${amount}, Cần: ${order.gia_mua}`);
+      return res.status(400).json({ 
+        success: false, 
+        message: `Số tiền không khớp. Cần ${order.gia_mua}đ, nhận ${amount}đ` 
+      });
+    }
+
+    // Cập nhật trạng thái đơn hàng thành "Đã duyệt"
+    await pool.query(
+      `UPDATE don_hang 
+       SET trang_thai = 'Đã duyệt', 
+           ngay_duyet = NOW(),
+           ghi_chu = CONCAT(IFNULL(ghi_chu, ''), '\nGiao dịch tự động xác nhận. Mã GD: ', ?)
+       WHERE ma_don_hang = ?`,
+      [transactionId, order.ma_don_hang]
+    );
+
+    console.log(`✅ Đã tự động duyệt đơn hàng #${order.ma_don_hang} - Sim: ${simNumber}`);
+
+    // TODO: Gửi thông báo cho khách hàng (SMS/Email)
+    // await sendSMS(order.sdt_khach_hang, `Đơn hàng sim ${simNumber} đã được xác nhận thanh toán!`);
+
+    res.json({ 
+      success: true, 
+      message: 'Đã xác nhận thanh toán và cập nhật đơn hàng',
+      orderId: order.ma_don_hang,
+      simNumber: simNumber
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi webhook:', error);
+    res.status(500).json({ success: false, message: 'Lỗi xử lý webhook' });
+  }
+});
+
+// API test webhook (để test thủ công)
+app.post('/api/webhook/test', async (req, res) => {
+  try {
+    const { simNumber, amount } = req.body;
+    
+    // Giả lập webhook từ ngân hàng
+    const webhookData = {
+      transactionId: `TEST${Date.now()}`,
+      amount: amount,
+      description: `MUA SO ${simNumber}`,
+      accountNumber: '1025311193',
+      transactionDate: new Date().toISOString(),
+      bankCode: 'VCB'
+    };
+
+    console.log('🧪 Test webhook:', webhookData);
+
+    // Gọi webhook chính
+    const response = await fetch('http://localhost:5000/api/webhook/bank-transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookData)
+    });
+
+    const result = await response.json();
+    res.json({ success: true, testResult: result });
+
+  } catch (error) {
+    console.error('❌ Lỗi test webhook:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==================== SERVER ====================
 
 const PORT = 5000;
 app.listen(PORT, () => {
