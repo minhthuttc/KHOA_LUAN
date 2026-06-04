@@ -1,11 +1,15 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Khởi tạo Google Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDL7YqR8K7v8K7v8K7v8K7v8K7v8K7v8K7'); // Thay bằng API key thật
 
 // MySQL connection pool
 const pool = mysql.createPool({
@@ -22,6 +26,92 @@ const pool = mysql.createPool({
 const w1 = 0.5; // Phong thủy
 const w2 = 0.4; // Sở thích
 const w3 = 0.1; // Hành vi
+
+// API phân tích phong thủy bằng AI
+app.post('/api/fengshui-ai-analysis', async (req, res) => {
+  try {
+    const { birthDate, birthTime, gender, calendarType } = req.body;
+    
+    // Chuẩn bị prompt cho AI
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    
+    const prompt = `
+Bạn là chuyên gia phong thủy Việt Nam uy tín, có kiến thức sâu về:
+- Nạp Âm 60 năm
+- Can Chi năm sinh
+- 12 Giờ Địa Chi
+- Ngũ hành tương sinh tương khắc
+- Phân tích mệnh số chi tiết
+
+Hãy phân tích phong thủy chi tiết và CHÍNH XÁC cho người sau:
+- Ngày sinh: ${birthDate} (${calendarType === 'solar' ? 'Dương lịch' : 'Âm lịch'})
+${birthTime ? `- Giờ sinh: ${birthTime}` : ''}
+- Giới tính: ${gender === 'male' ? 'Nam' : 'Nữ'}
+
+YÊU CẦU PHÂN TÍCH:
+1. Tính CHÍNH XÁC mệnh ngũ hành theo Nạp Âm (không phải công thức đơn giản)
+2. Tính Can Chi năm sinh
+${birthTime ? '3. Phân tích giờ sinh theo 12 Giờ Địa Chi và tương sinh khắc với mệnh năm' : ''}
+4. Phân tích tính cách chi tiết dựa trên mệnh và giờ sinh (nếu có)
+5. Đưa ra 3 con số may mắn CHÍNH XÁC nhất (dựa trên Hà Đồ Lạc Thư)
+6. Gợi ý màu sắc may mắn (tối thiểu 3 màu)
+7. Hướng may mắn (chi tiết cho giới tính)
+8. Nghề nghiệp phù hợp (liệt kê cụ thể 5-7 nghề)
+9. Phân tích tình duyên (mệnh hợp, mệnh tránh, và lời khuyên cụ thể)
+10. Phân tích tài lộc (chi tiết về xu hướng tài chính, cách đầu tư)
+11. Lời khuyên phong thủy thực tế (tối thiểu 5 lời khuyên cụ thể)
+
+QUAN TRỌNG: 
+- Phân tích phải DỰA TRÊN NGÀY SINH THẬT, không chung chung
+- Mỗi người sinh ngày khác nhau sẽ có phân tích KHÁC NHAU
+- Trả về JSON với format sau (chỉ trả JSON, không thêm text khác):
+
+{
+  "element": "Kim|Mộc|Thủy|Hỏa|Thổ",
+  "canChiYear": "Giáp Thìn",
+  "luckyNumbers": [4, 9, 5],
+  "luckyColors": ["Trắng", "Vàng", "Nâu"],
+  "direction": "Tây, Tây Bắc",
+  "birthHourInfo": ${birthTime ? '{"name": "Giờ Tý", "range": "23:00-01:00", "element": "Thủy", "trait": "Thông minh, linh hoạt"}' : 'null'},
+  "hourCompatibility": ${birthTime ? '{"type": "sinh|khắc|bình", "desc": "Mô tả chi tiết"}' : 'null'},
+  "personality": "Phân tích tính cách chi tiết dựa trên ngày giờ sinh thật...",
+  "suitableCareer": "Danh sách nghề nghiệp cụ thể...",
+  "loveCompatibility": {
+    "best": "Thổ, Thủy",
+    "avoid": "Hỏa, Mộc",
+    "advice": "Lời khuyên cụ thể về tình duyên..."
+  },
+  "wealthFortune": "Phân tích tài lộc chi tiết...",
+  "advice": ["Lời khuyên 1", "Lời khuyên 2", "..."]
+}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let text = response.text();
+    
+    // Loại bỏ markdown code block nếu có
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    // Parse JSON
+    const aiAnalysis = JSON.parse(text);
+    
+    res.json({
+      success: true,
+      data: aiAnalysis,
+      source: 'AI',
+      message: 'Phân tích bằng AI Gemini'
+    });
+    
+  } catch (error) {
+    console.error('Error in AI analysis:', error);
+    // Nếu AI lỗi, trả về phân tích cơ bản
+    res.status(200).json({
+      success: false,
+      message: 'AI tạm thời không khả dụng, vui lòng thử lại sau',
+      source: 'fallback'
+    });
+  }
+});
 
 app.post('/api/recommend', async (req, res) => {
   try {
