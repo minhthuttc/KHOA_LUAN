@@ -5,7 +5,7 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
   const [filters, setFilters] = useState({
     network: [],
     simType: [],
-    minPrice: 500000,
+    minPrice: 1000,
     maxPrice: 5000000,
     specialNumbers: "",
     anniversaryDate: "",
@@ -65,7 +65,7 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
     const resetFilters = {
       network: [],
       simType: [],
-      minPrice: 500000,
+      minPrice: 1000,
       maxPrice: 5000000,
       specialNumbers: "",
       anniversaryDate: "",
@@ -151,15 +151,15 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
           <input
             type="range"
             name="maxPrice"
-            min="500000"
+            min="1000"
             max="5000000"
-            step="500000"
+            step="100000"
             value={filters.maxPrice}
             onChange={handlePriceSliderChange}
             className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
           />
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-            <span>500.000 đ</span>
+            <span>1.000 đ</span>
             <span>5.000.000 đ</span>
           </div>
         </div>

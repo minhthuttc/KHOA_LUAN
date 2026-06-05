@@ -348,7 +348,7 @@ export default function AdminPage() {
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold mb-2 dark:text-gray-300">
                       Điểm nút phong thủy (1-10) * 
-                      <span className="text-xs text-gray-500 font-normal ml-2">Càng cao càng tốt</span>
+                      <span className="text-xs text-gray-500 font-normal ml-2">Đánh giá chất lượng sim</span>
                     </label>
                     <input
                       type="range"
@@ -362,6 +362,20 @@ export default function AdminPage() {
                       <span>1 (Kém)</span>
                       <span className="text-lg font-bold text-primary">{newSim.total_nodes}/10</span>
                       <span>10 (Tuyệt vời)</span>
+                    </div>
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                        <strong>💡 Điểm nút phong thủy</strong> là thước đo chất lượng sim dựa trên các yếu tố:
+                      </p>
+                      <ul className="text-xs text-blue-600 dark:text-blue-400 mt-2 space-y-1 ml-4 list-disc">
+                        <li><strong>Độ đẹp số:</strong> Số lặp (999, 888), số tiến (123, 456), đối xứng</li>
+                        <li><strong>Ý nghĩa:</strong> Số may mắn (6, 8, 9), tránh số xấu (4)</li>
+                        <li><strong>Hợp phong thủy:</strong> Phù hợp với mệnh ngũ hành</li>
+                        <li><strong>Độ hiếm:</strong> Sim độc, khó tìm</li>
+                      </ul>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                        <strong>Gợi ý:</strong> 1-3 (Sim thường), 4-6 (Sim khá), 7-8 (Sim đẹp), 9-10 (Sim VIP)
+                      </p>
                     </div>
                   </div>
 
@@ -640,6 +654,7 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên KH</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT KH</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">TT Thanh toán</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
@@ -662,6 +677,29 @@ export default function AdminPage() {
                         }`}>
                           {purchase.payment_method === 'bank_transfer' ? 'Chuyển khoản' : 'COD'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap inline-block text-center ${
+                            purchase.payment_status === 'PAID' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : purchase.payment_status === 'FAILED'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {purchase.payment_status === 'PAID' ? '✓ Đã thanh toán' : purchase.payment_status === 'FAILED' ? '✗ Thất bại' : '⏳ Chờ thanh toán'}
+                          </span>
+                          {purchase.paid_at && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(purchase.paid_at).toLocaleString('vi-VN')}
+                            </span>
+                          )}
+                          {purchase.transaction_id && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              GD: {purchase.transaction_id}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white text-sm">
                         {new Date(purchase.purchase_date).toLocaleString('vi-VN')}

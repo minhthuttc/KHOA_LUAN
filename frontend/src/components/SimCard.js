@@ -9,7 +9,10 @@ export default function SimCard({ sim }) {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const [purchaseForm, setPurchaseForm] = useState({
     fullName: "",
     phone: "",
@@ -17,6 +20,43 @@ export default function SimCard({ sim }) {
     paymentMethod: "bank_transfer"
   });
   const [loading, setLoading] = useState(false);
+
+  // Polling để kiểm tra trạng thái thanh toán
+  useEffect(() => {
+    let pollingInterval;
+    
+    if (currentOrderId && paymentStatus === 'PENDING' && showQRModal) {
+      console.log('🔄 Bắt đầu polling trạng thái thanh toán cho đơn:', currentOrderId);
+      
+      pollingInterval = setInterval(async () => {
+        try {
+          const response = await axios.get(`http://localhost:5000/api/order/payment-status/${currentOrderId}`);
+          if (response.data.success) {
+            const { paymentStatus: status } = response.data.data;
+            console.log('📊 Trạng thái thanh toán:', status);
+            
+            if (status === 'PAID') {
+              setPaymentStatus('PAID');
+              setShowQRModal(false);
+              setShowSuccessModal(true);
+              clearInterval(pollingInterval);
+              
+              // Hiển thị thông báo thành công
+              alert('✅ Thanh toán thành công! Đơn hàng đã được xác nhận.');
+            }
+          }
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra trạng thái:', error);
+        }
+      }, 5000); // Kiểm tra mỗi 5 giây
+    }
+
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [currentOrderId, paymentStatus, showQRModal]);
 
   // Extract data from backend response
   const { 
@@ -284,19 +324,18 @@ export default function SimCard({ sim }) {
     // Nếu chọn chuyển khoản, hiển thị QR code
     if (purchaseForm.paymentMethod === 'bank_transfer') {
       try {
-        // Tạo nội dung chuyển khoản
-        const bankInfo = {
-          bankId: "970436", // Mã ngân hàng Vietcombank
-          accountNo: "1025311193",
-          accountName: "NGUYEN VO MINH THU",
-          amount: price,
-          description: `MUA SO ${sim_number.replace(/\s/g, '')}`
-        };
+        // Tạo link QR động theo chuẩn VietQR với số tiền cụ thể
+        const bankId = "970436"; // Mã ngân hàng Vietcombank
+        const accountNo = "1025311193";
+        const accountName = "NGUYEN VO MINH THU";
+        const amount = price; // Số tiền của sim
+        const description = `MUASO${sim_number.replace(/\s/g, '')}`;
         
-        // Tạo link QR theo chuẩn VietQR
-        // THAY ĐỔI LINK QR CỦA BẠN Ở ĐÂY:
-        const qrContent = "/images/qrvietcombank.png"; // ✅ Đường dẫn đúng đến file QR
+        // API VietQR - tự động điền số tiền vào QR code
+        // Format: https://img.vietqr.io/image/BANK_ID-ACCOUNT_NO-TEMPLATE.jpg?amount=AMOUNT&addInfo=INFO&accountName=NAME
+        const qrContent = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
         
+        console.log('QR URL:', qrContent); // Debug
         setQrCodeUrl(qrContent);
         setShowQRModal(true);
         setShowPurchaseModal(false);
@@ -312,7 +351,7 @@ export default function SimCard({ sim }) {
 
     try {
       // Lưu lịch sử mua hàng
-      await axios.post("http://localhost:5000/api/purchase", {
+      const response = await axios.post("http://localhost:5000/api/purchase", {
         user_id: user.id,
         user_name: user.name,
         sim_number,
@@ -325,18 +364,15 @@ export default function SimCard({ sim }) {
         payment_method: purchaseForm.paymentMethod
       });
 
-      alert(`Đặt mua sim ${sim_number} thành công!\n\nThông tin:\n- Họ tên: ${purchaseForm.fullName}\n- SĐT: ${purchaseForm.phone}\n- Địa chỉ: ${purchaseForm.address}\n- Thanh toán: COD\n\nChúng tôi sẽ liên hệ với bạn sớm!`);
-      
+      // Lưu orderId
+      if (response.data.orderId) {
+        setCurrentOrderId(response.data.orderId);
+      }
+
+      // Đóng modal purchase và hiển thị modal thành công
       setShowPurchaseModal(false);
-      setPurchaseForm({
-        fullName: "",
-        phone: "",
-        address: "",
-        paymentMethod: "bank_transfer"
-      });
+      setShowSuccessModal(true);
       
-      // Reload trang để cập nhật danh sách sim
-      window.location.reload();
     } catch (error) {
       console.error("Purchase error:", error);
       const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
@@ -360,7 +396,7 @@ export default function SimCard({ sim }) {
 
     try {
       // Lưu lịch sử mua hàng
-      await axios.post("http://localhost:5000/api/purchase", {
+      const response = await axios.post("http://localhost:5000/api/purchase", {
         user_id: user.id,
         user_name: user.name,
         sim_number,
@@ -373,18 +409,17 @@ export default function SimCard({ sim }) {
         payment_method: 'bank_transfer'
       });
 
-      alert(`✅ ĐẶT MUA SIM THÀNH CÔNG!\n\n📱 Số sim: ${sim_number}\n💰 Số tiền: ${formatPrice(price)}\n\n📋 THÔNG TIN CHUYỂN KHOẢN:\n🏦 Ngân hàng: Vietcombank\n💳 STK: 1025311193\n👤 Chủ TK: MINH THU SIM\n✍️ Nội dung: MUA SO ${sim_number.replace(/\s/g, '')}\n\n⏰ Sau khi chuyển khoản, chúng tôi sẽ:\n• Kiểm tra giao dịch trong vòng 1-2 giờ\n• Xác nhận qua số điện thoại: ${purchaseForm.phone}\n• Giao sim tận nơi trong 24-48h\n\n📞 Hotline hỗ trợ: 0912341991\n\nCảm ơn bạn đã tin tưởng MINH THU SIM! 🙏`);
+      // Lưu orderId và bắt đầu polling
+      if (response.data.orderId) {
+        setCurrentOrderId(response.data.orderId);
+        setPaymentStatus('PENDING');
+        console.log('✅ Đã tạo đơn hàng:', response.data.orderId);
+        console.log('🔄 Đang chờ thanh toán... Polling sẽ tự động kiểm tra');
+      }
       
-      setShowQRModal(false);
-      setPurchaseForm({
-        fullName: "",
-        phone: "",
-        address: "",
-        paymentMethod: "bank_transfer"
-      });
+      // Không đóng QR modal, để người dùng thanh toán và polling tự động kiểm tra
+      // setShowQRModal vẫn mở, khi thanh toán thành công polling sẽ tự động đóng
       
-      // Reload trang để cập nhật danh sách sim
-      window.location.reload();
     } catch (error) {
       console.error("Purchase error:", error);
       const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
@@ -774,12 +809,24 @@ export default function SimCard({ sim }) {
           {/* Content */}
           <div className="p-4 space-y-4">
             {/* QR Code - TO HƠN */}
-            <div className="bg-white border-4 border-primary/20 rounded-xl p-2 flex justify-center">
-              <img 
-                src={qrCodeUrl} 
-                alt="QR Code thanh toán" 
-                className="w-80 h-80 object-contain"
-              />
+            <div className="bg-white border-4 border-primary/20 rounded-xl p-2 flex justify-center items-center min-h-[320px]">
+              {qrCodeUrl ? (
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code thanh toán" 
+                  className="w-80 h-80 object-contain"
+                  onError={(e) => {
+                    console.error('QR Image load error:', e);
+                    e.target.onerror = null;
+                    e.target.src = '/images/qrvietcombank.png'; // Fallback về ảnh tĩnh
+                  }}
+                />
+              ) : (
+                <div className="text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-sm">Đang tạo mã QR...</p>
+                </div>
+              )}
             </div>
 
             {/* Bank Info - COMPACT */}
@@ -820,7 +867,7 @@ export default function SimCard({ sim }) {
                 <li>Chọn tính năng "Quét mã QR"</li>
                 <li>Quét mã QR phía trên</li>
                 <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                <li>Nhấn "Xác nhận đặt mua" bên dưới sau khi chuyển khoản xong</li>
+                <li>Nhấn "Đã thanh toán" bên dưới sau khi chuyển khoản xong</li>
               </ol>
             </div>
 
@@ -840,12 +887,129 @@ export default function SimCard({ sim }) {
                 disabled={loading}
                 className="flex-1 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg font-semibold transition disabled:opacity-50 text-sm"
               >
-                {loading ? "Đang xử lý..." : "Xác nhận đặt mua"}
+                {loading ? "Đang xử lý..." : "Đã thanh toán"}
               </button>
             </div>
 
             <p className="text-xs text-center text-gray-500 dark:text-gray-400 pt-1">
               💡 Sau khi chuyển khoản, chúng tôi sẽ xác nhận và liên hệ với bạn trong vòng 24h
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Success Modal */}
+    {showSuccessModal && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-dark-lighter rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Success Icon - Fixed Header */}
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white p-6 text-center flex-shrink-0">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold">Đặt mua thành công!</h2>
+            <p className="text-green-100 mt-1 text-sm">Đơn hàng của bạn đã được ghi nhận</p>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+              <h3 className="font-bold text-center dark:text-white mb-3 text-base">📋 Thông tin đơn hàng</h3>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Số sim:</span>
+                  <span className="font-bold text-primary text-base">{formatPhone(sim_number)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Nhà mạng:</span>
+                  <span className="font-semibold dark:text-white">{network}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Số tiền:</span>
+                  <span className="font-bold text-red-500 text-base">{formatPrice(price)}</span>
+                </div>
+                <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Khách hàng:</span>
+                  <span className="font-semibold dark:text-white">{purchaseForm.fullName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Số điện thoại:</span>
+                  <span className="font-semibold dark:text-white">{purchaseForm.phone}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h4 className="font-semibold dark:text-white mb-2 text-sm flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                {purchaseForm.paymentMethod === 'bank_transfer' ? 'Thông tin chuyển khoản' : 'Phương thức thanh toán'}
+              </h4>
+              {purchaseForm.paymentMethod === 'bank_transfer' ? (
+                <div className="space-y-1.5 text-sm dark:text-gray-300">
+                  <p><strong>Ngân hàng:</strong> Vietcombank</p>
+                  <p><strong>STK:</strong> 1025311193</p>
+                  <p><strong>Chủ TK:</strong> NGUYEN VO MINH THU</p>
+                  <p><strong>Nội dung:</strong> MUASO{sim_number.replace(/\s/g, '')}</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 text-sm dark:text-gray-300">
+                  <p className="flex items-center gap-2">
+                    <span className="text-2xl">💰</span>
+                    <span><strong>COD</strong> - Thanh toán khi nhận hàng</span>
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    Bạn sẽ thanh toán tiền mặt cho shipper khi nhận sim. Vui lòng chuẩn bị số tiền <strong className="text-red-500">{formatPrice(price)}</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2 text-sm flex items-center gap-1">
+                ✅ Các bước tiếp theo
+              </h4>
+              {purchaseForm.paymentMethod === 'bank_transfer' ? (
+                <ol className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300 list-decimal list-inside">
+                  <li>Chúng tôi sẽ kiểm tra giao dịch trong vòng 1-2 giờ</li>
+                  <li>Xác nhận qua số điện thoại: <span className="font-semibold">{purchaseForm.phone}</span></li>
+                  <li>Giao sim tận nơi trong 24-48h</li>
+                </ol>
+              ) : (
+                <ol className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300 list-decimal list-inside">
+                  <li>Chúng tôi sẽ liên hệ xác nhận đơn hàng trong vòng 30 phút</li>
+                  <li>Shipper giao sim đến địa chỉ: <span className="font-semibold">{purchaseForm.address}</span></li>
+                  <li>Bạn kiểm tra sim và thanh toán tiền mặt cho shipper</li>
+                </ol>
+              )}
+              <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  📞 Hotline hỗ trợ: <span className="font-bold text-primary">0382286177</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-dark flex-shrink-0">
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                setPurchaseForm({
+                  fullName: "",
+                  phone: "",
+                  address: "",
+                  paymentMethod: "bank_transfer"
+                });
+                window.location.reload();
+              }}
+              className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-lg font-semibold transition shadow-lg"
+            >
+              Hoàn tất
+            </button>
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+              Cảm ơn bạn đã tin tưởng <span className="font-bold text-primary">MINH THU SIM</span>! 🙏
             </p>
           </div>
         </div>

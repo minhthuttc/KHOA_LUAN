@@ -276,20 +276,24 @@ app.post('/api/purchase', async (req, res) => {
     }
 
     // Tạo đơn hàng
-    await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO don_hang (ma_nguoi_dung, ten_nguoi_dung, so_sim, nha_mang, gia_mua, loai_sim, 
-       ten_khach_hang, sdt_khach_hang, dia_chi_khach_hang, phuong_thuc_thanh_toan, trang_thai) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ten_khach_hang, sdt_khach_hang, dia_chi_khach_hang, phuong_thuc_thanh_toan, trang_thai, payment_status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [user_id, user_name, sim_number, network, price, category, 
-       customer_name, customer_phone, customer_address, payment_method, 'Chờ duyệt']
+       customer_name, customer_phone, customer_address, payment_method, 'Chờ duyệt', 'PENDING']
     );
+
+    const orderId = result.insertId;
 
     // Cập nhật trạng thái sim thành "Đã bán"
     await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Đã bán', sim_number]);
 
     res.json({ 
       success: true, 
-      message: 'Đặt mua sim thành công! Chúng tôi sẽ liên hệ với bạn sớm.' 
+      message: 'Đặt mua sim thành công! Chúng tôi sẽ liên hệ với bạn sớm.',
+      orderId: orderId,
+      simNumber: sim_number
     });
   } catch (error) {
     console.error('Error in /api/purchase:', error);
@@ -556,7 +560,26 @@ app.post('/api/fengshui-history', async (req, res) => {
 app.get('/api/admin/purchases', async (req, res) => {
   try {
     const [purchases] = await pool.query(
-      'SELECT ma_don_hang as id, ma_nguoi_dung as user_id, ten_nguoi_dung as user_name, so_sim as sim_number, nha_mang as network, gia_mua as price, loai_sim as category, ten_khach_hang as customer_name, sdt_khach_hang as customer_phone, dia_chi_khach_hang as customer_address, phuong_thuc_thanh_toan as payment_method, ngay_mua as purchase_date, trang_thai as status, ngay_duyet as approval_date FROM don_hang ORDER BY ngay_mua DESC'
+      `SELECT 
+        ma_don_hang as id, 
+        ma_nguoi_dung as user_id, 
+        ten_nguoi_dung as user_name, 
+        so_sim as sim_number, 
+        nha_mang as network, 
+        gia_mua as price, 
+        loai_sim as category, 
+        ten_khach_hang as customer_name, 
+        sdt_khach_hang as customer_phone, 
+        dia_chi_khach_hang as customer_address, 
+        phuong_thuc_thanh_toan as payment_method, 
+        ngay_mua as purchase_date, 
+        trang_thai as status, 
+        ngay_duyet as approval_date,
+        payment_status,
+        paid_at,
+        transaction_id
+      FROM don_hang 
+      ORDER BY ngay_mua DESC`
     );
     res.json({ success: true, data: purchases });
   } catch (error) {
@@ -571,7 +594,27 @@ app.get('/api/user/:userId/history', async (req, res) => {
     const { userId } = req.params;
     
     const [purchases] = await pool.query(
-      'SELECT ma_don_hang as id, ma_nguoi_dung as user_id, ten_nguoi_dung as user_name, so_sim as sim_number, nha_mang as network, gia_mua as price, loai_sim as category, ten_khach_hang as customer_name, sdt_khach_hang as customer_phone, dia_chi_khach_hang as customer_address, phuong_thuc_thanh_toan as payment_method, ngay_mua as purchase_date, trang_thai as status, ngay_duyet as approval_date FROM don_hang WHERE ma_nguoi_dung = ? ORDER BY ngay_mua DESC',
+      `SELECT 
+        ma_don_hang as id, 
+        ma_nguoi_dung as user_id, 
+        ten_nguoi_dung as user_name, 
+        so_sim as sim_number, 
+        nha_mang as network, 
+        gia_mua as price, 
+        loai_sim as category, 
+        ten_khach_hang as customer_name, 
+        sdt_khach_hang as customer_phone, 
+        dia_chi_khach_hang as customer_address, 
+        phuong_thuc_thanh_toan as payment_method, 
+        ngay_mua as purchase_date, 
+        trang_thai as status, 
+        ngay_duyet as approval_date,
+        payment_status,
+        paid_at,
+        transaction_id
+      FROM don_hang 
+      WHERE ma_nguoi_dung = ? 
+      ORDER BY ngay_mua DESC`,
       [userId]
     );
     
@@ -745,14 +788,17 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
       });
     }
 
-    // Cập nhật trạng thái đơn hàng thành "Đã duyệt"
+    // Cập nhật trạng thái đơn hàng thành "Đã duyệt" và payment_status thành "PAID"
     await pool.query(
       `UPDATE don_hang 
        SET trang_thai = 'Đã duyệt', 
+           payment_status = 'PAID',
+           paid_at = NOW(),
+           transaction_id = ?,
            ngay_duyet = NOW(),
            ghi_chu = CONCAT(IFNULL(ghi_chu, ''), '\nGiao dịch tự động xác nhận. Mã GD: ', ?)
        WHERE ma_don_hang = ?`,
-      [transactionId, order.ma_don_hang]
+      [transactionId, transactionId, order.ma_don_hang]
     );
 
     console.log(`✅ Đã tự động duyệt đơn hàng #${order.ma_don_hang} - Sim: ${simNumber}`);
@@ -803,6 +849,72 @@ app.post('/api/webhook/test', async (req, res) => {
   } catch (error) {
     console.error('❌ Lỗi test webhook:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// API kiểm tra trạng thái thanh toán đơn hàng (cho polling)
+app.get('/api/order/payment-status/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const [orders] = await pool.query(
+      'SELECT ma_don_hang, payment_status, paid_at, transaction_id, trang_thai FROM don_hang WHERE ma_don_hang = ?',
+      [orderId]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        orderId: orders[0].ma_don_hang,
+        paymentStatus: orders[0].payment_status,
+        paidAt: orders[0].paid_at,
+        transactionId: orders[0].transaction_id,
+        orderStatus: orders[0].trang_thai
+      }
+    });
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
+// API lấy đơn hàng theo số sim và user (cho frontend check)
+app.get('/api/order/by-sim/:simNumber', async (req, res) => {
+  try {
+    const { simNumber } = req.params;
+    const { userId } = req.query;
+    
+    const [orders] = await pool.query(
+      `SELECT ma_don_hang, payment_status, paid_at, transaction_id, trang_thai, ngay_mua 
+       FROM don_hang 
+       WHERE so_sim = ? AND ma_nguoi_dung = ?
+       ORDER BY ngay_mua DESC 
+       LIMIT 1`,
+      [simNumber, userId]
+    );
+
+    if (orders.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        orderId: orders[0].ma_don_hang,
+        paymentStatus: orders[0].payment_status,
+        paidAt: orders[0].paid_at,
+        transactionId: orders[0].transaction_id,
+        orderStatus: orders[0].trang_thai,
+        orderDate: orders[0].ngay_mua
+      }
+    });
+  } catch (error) {
+    console.error('Error getting order by sim:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });
 

@@ -61,49 +61,41 @@ export default function ContactPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Info & Form */}
           <div className="space-y-8">
-            {/* Contact Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Phone className="w-6 h-6 text-primary" />
+            {/* Contact Info Card - Combined */}
+            <div className="bg-white dark:bg-dark-lighter rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-6 dark:text-white text-center">Thông tin liên hệ</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Phone className="w-7 h-7 text-primary" />
                   </div>
-                  <h3 className="font-bold text-lg dark:text-white">Điện thoại</h3>
+                  <div>
+                    <h3 className="font-bold text-base dark:text-white mb-1">Điện thoại</h3>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold">0382 286 177</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">0382 286 177</p>
-              </div>
 
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Mail className="w-6 h-6 text-primary" />
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Mail className="w-7 h-7 text-primary" />
                   </div>
-                  <h3 className="font-bold text-lg dark:text-white">Email</h3>
+                  <div>
+                    <h3 className="font-bold text-base dark:text-white mb-1">Email</h3>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold text-xs">nguyenthutv.220403@gmail.com</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">nguyenthutv.220403@gmail.com</p>
-              </div>
 
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-primary" />
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+                    <MapPin className="w-7 h-7 text-primary" />
                   </div>
-                  <h3 className="font-bold text-lg dark:text-white">Địa chỉ</h3>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Nguyễn Thị Minh Khai, Phường 7, TP. Trà Vinh
-                </p>
-              </div>
-
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-primary" />
+                  <div>
+                    <h3 className="font-bold text-base dark:text-white mb-1">Địa chỉ</h3>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold text-sm">
+                      Nguyễn Thị Minh Khai, P7, TP. Trà Vinh
+                    </p>
                   </div>
-                  <h3 className="font-bold text-lg dark:text-white">Giờ làm việc</h3>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">Thứ 2 - Thứ 7: 8:00 - 20:00</p>
-                <p className="text-gray-600 dark:text-gray-400">Chủ nhật: 9:00 - 18:00</p>
               </div>
             </div>
 

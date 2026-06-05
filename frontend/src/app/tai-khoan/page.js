@@ -164,15 +164,26 @@ export default function TaiKhoanPage() {
                           <p className="text-sm text-gray-500 dark:text-gray-400">Mã đơn hàng: #{purchase.id}</p>
                           <p className="text-2xl font-bold text-primary mt-1">{purchase.sim_number}</p>
                         </div>
-                        <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                          purchase.status === 'Đã duyệt' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : purchase.status === 'Đã hủy'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}>
-                          {purchase.status || 'Chờ duyệt'}
-                        </span>
+                        <div className="flex flex-col gap-2 items-end">
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                            purchase.status === 'Đã duyệt' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : purchase.status === 'Đã hủy'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {purchase.status || 'Chờ duyệt'}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            purchase.payment_status === 'PAID' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : purchase.payment_status === 'FAILED'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {purchase.payment_status === 'PAID' ? '✓ Đã thanh toán' : purchase.payment_status === 'FAILED' ? '✗ Thất bại' : '⏳ Chờ thanh toán'}
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4 mb-4">
