@@ -733,9 +733,14 @@ app.put('/api/admin/messages/:id', async (req, res) => {
 
 // API webhook nhận thông báo từ ngân hàng (Vietcombank, VietQR, etc.)
 app.post('/api/webhook/bank-transfer', async (req, res) => {
+  const webhookTime = new Date().toLocaleString();
+  
+  console.log('\n🔔 ===== WEBHOOK RECEIVED ===== 🔔');
+  console.log('⏰ Time:', webhookTime);
+  console.log('📥 Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('');
+  
   try {
-    console.log('📥 Webhook nhận thông báo chuyển khoản:', req.body);
-    
     const {
       transactionId,      // ID giao dịch từ ngân hàng
       amount,             // Số tiền
@@ -745,23 +750,41 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
       bankCode           // Mã ngân hàng
     } = req.body;
 
+    console.log('🔍 Parsing webhook data:');
+    console.log('   - Transaction ID:', transactionId);
+    console.log('   - Amount:', amount);
+    console.log('   - Description:', description);
+    console.log('   - Account Number:', accountNumber);
+    console.log('');
+
     // Kiểm tra STK có đúng không
     if (accountNumber !== '1025311193') {
-      console.log('⚠️ STK không khớp:', accountNumber);
+      console.log('❌ STK không khớp:', accountNumber, '!== 1025311193');
       return res.status(400).json({ success: false, message: 'Số tài khoản không đúng' });
     }
+    console.log('✅ Account number matched');
 
     // Trích xuất số sim từ nội dung chuyển khoản
-    // Ví dụ: "MUA SO 0912341991" hoặc "MUA SO 091 234 1991"
-    const simMatch = description?.match(/MUA SO[:\s]*(\d{10}|\d{3}\s*\d{3}\s*\d{4})/i);
+    // Ví dụ: "MUA SO 0912341991" hoặc "MUA SO 091 234 1991" hoặc "MUASO0912341991"
+    console.log('🔍 Extracting sim number from description:', description);
+    const simMatch = description?.match(/MUA\s*SO[:\s]*(\d{10}|\d{3}\s*\d{3}\s*\d{4})/i);
+    
     if (!simMatch) {
-      console.log('⚠️ Không tìm thấy số sim trong nội dung:', description);
+      console.log('❌ Không tìm thấy số sim trong nội dung:', description);
+      console.log('   Pattern expected: "MUA SO 0912341991" hoặc "MUASO0912341991"');
       return res.status(400).json({ success: false, message: 'Không tìm thấy số sim trong nội dung chuyển khoản' });
     }
 
     const simNumber = simMatch[1].replace(/\s/g, ''); // Loại bỏ khoảng trắng
+    console.log('✅ Sim number extracted:', simNumber);
+    console.log('');
 
     // Tìm đơn hàng chờ duyệt
+    console.log('🔍 Searching for order with:');
+    console.log('   - Sim:', simNumber);
+    console.log('   - Status: Chờ duyệt');
+    console.log('   - Payment method: bank_transfer');
+    
     const [orders] = await pool.query(
       `SELECT * FROM don_hang 
        WHERE so_sim = ? 
@@ -772,24 +795,57 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
       [simNumber]
     );
 
+    console.log('📊 Orders found:', orders.length);
+
     if (orders.length === 0) {
-      console.log('⚠️ Không tìm thấy đơn hàng chờ duyệt cho sim:', simNumber);
+      console.log('❌ Không tìm thấy đơn hàng chờ duyệt cho sim:', simNumber);
+      
+      // Debug: Tìm tất cả đơn với sim này
+      const [allOrders] = await pool.query(
+        'SELECT ma_don_hang, trang_thai, payment_status, phuong_thuc_thanh_toan FROM don_hang WHERE so_sim = ?',
+        [simNumber]
+      );
+      console.log('🔍 All orders for this sim:', allOrders);
+      
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
     const order = orders[0];
+    console.log('✅ Order found:');
+    console.log('   - Order ID:', order.ma_don_hang);
+    console.log('   - Sim:', order.so_sim);
+    console.log('   - Price:', order.gia_mua, 'VNĐ');
+    console.log('   - Status:', order.trang_thai);
+    console.log('   - Payment status:', order.payment_status);
+    console.log('');
 
     // Kiểm tra số tiền có khớp không (cho phép sai số 1000đ)
-    if (Math.abs(amount - order.gia_mua) > 1000) {
-      console.log(`⚠️ Số tiền không khớp. Nhận: ${amount}, Cần: ${order.gia_mua}`);
+    const priceDiff = Math.abs(amount - order.gia_mua);
+    console.log('💰 Checking amount:');
+    console.log('   - Received:', amount, 'VNĐ');
+    console.log('   - Expected:', order.gia_mua, 'VNĐ');
+    console.log('   - Difference:', priceDiff, 'VNĐ');
+    
+    if (priceDiff > 1000) {
+      console.log('❌ Số tiền không khớp (sai số > 1000đ)');
       return res.status(400).json({ 
         success: false, 
         message: `Số tiền không khớp. Cần ${order.gia_mua}đ, nhận ${amount}đ` 
       });
     }
+    console.log('✅ Amount matched (difference <= 1000đ)');
+    console.log('');
 
     // Cập nhật trạng thái đơn hàng thành "Đã duyệt" và payment_status thành "PAID"
-    await pool.query(
+    console.log('🔄 Updating order to PAID...');
+    console.log('   UPDATE don_hang SET:');
+    console.log('   - trang_thai = "Đã duyệt"');
+    console.log('   - payment_status = "PAID"');
+    console.log('   - paid_at = NOW()');
+    console.log('   - transaction_id =', transactionId);
+    console.log('   WHERE ma_don_hang =', order.ma_don_hang);
+    
+    const [updateResult] = await pool.query(
       `UPDATE don_hang 
        SET trang_thai = 'Đã duyệt', 
            payment_status = 'PAID',
@@ -801,7 +857,12 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
       [transactionId, transactionId, order.ma_don_hang]
     );
 
-    console.log(`✅ Đã tự động duyệt đơn hàng #${order.ma_don_hang} - Sim: ${simNumber}`);
+    console.log('✅ UPDATE COMPLETED!');
+    console.log('   - Rows affected:', updateResult.affectedRows);
+    console.log('');
+    console.log(`🎉 Đã tự động duyệt đơn hàng #${order.ma_don_hang} - Sim: ${simNumber}`);
+    console.log('⏰ Frontend polling sẽ phát hiện trong ~3 giây...');
+    console.log('===== END WEBHOOK ===== \n');
 
     // TODO: Gửi thông báo cho khách hàng (SMS/Email)
     // await sendSMS(order.sdt_khach_hang, `Đơn hàng sim ${simNumber} đã được xác nhận thanh toán!`);
@@ -814,7 +875,8 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi webhook:', error);
+    console.error('❌ LỖI WEBHOOK:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ success: false, message: 'Lỗi xử lý webhook' });
   }
 });
@@ -854,19 +916,32 @@ app.post('/api/webhook/test', async (req, res) => {
 
 // API kiểm tra trạng thái thanh toán đơn hàng (cho polling)
 app.get('/api/order/payment-status/:orderId', async (req, res) => {
+  const requestTime = new Date().toLocaleTimeString();
+  console.log('\n=== API PAYMENT STATUS CALLED ===');
+  console.log('⏰ Time:', requestTime);
+  console.log('🆔 Order ID:', req.params.orderId);
+  
   try {
     const { orderId } = req.params;
     
+    console.log('🔍 Querying database for order:', orderId);
     const [orders] = await pool.query(
       'SELECT ma_don_hang, payment_status, paid_at, transaction_id, trang_thai FROM don_hang WHERE ma_don_hang = ?',
       [orderId]
     );
 
     if (orders.length === 0) {
+      console.log('❌ Order not found:', orderId);
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
-    res.json({
+    console.log('✅ Order found in database:');
+    console.log('   - ma_don_hang:', orders[0].ma_don_hang);
+    console.log('   - payment_status:', orders[0].payment_status);
+    console.log('   - paid_at:', orders[0].paid_at);
+    console.log('   - transaction_id:', orders[0].transaction_id);
+
+    const responseData = {
       success: true,
       data: {
         orderId: orders[0].ma_don_hang,
@@ -875,9 +950,14 @@ app.get('/api/order/payment-status/:orderId', async (req, res) => {
         transactionId: orders[0].transaction_id,
         orderStatus: orders[0].trang_thai
       }
-    });
+    };
+    
+    console.log('📤 Returning response:', JSON.stringify(responseData, null, 2));
+    console.log('=== END API CALL ===\n');
+    
+    res.json(responseData);
   } catch (error) {
-    console.error('Error checking payment status:', error);
+    console.error('❌ Error checking payment status:', error);
     res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });

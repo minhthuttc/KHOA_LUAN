@@ -21,38 +21,90 @@ export default function SimCard({ sim }) {
   });
   const [loading, setLoading] = useState(false);
 
-  // Polling để kiểm tra trạng thái thanh toán
+  // Debug useEffect - Log mỗi khi state thay đổi
+  useEffect(() => {
+    console.log('\n📊 === STATE CHANGED ===');
+    console.log('currentOrderId:', currentOrderId);
+    console.log('paymentStatus:', paymentStatus);
+    console.log('showQRModal:', showQRModal);
+    console.log('showSuccessModal:', showSuccessModal);
+    console.log('======================\n');
+  }, [currentOrderId, paymentStatus, showQRModal, showSuccessModal]);
+
+  // Polling để kiểm tra trạng thái thanh toán TỰ ĐỘNG - DEBUG VERSION
   useEffect(() => {
     let pollingInterval;
     
+    console.log('=== POLLING USEEFFECT TRIGGERED ===');
+    console.log('currentOrderId:', currentOrderId);
+    console.log('paymentStatus:', paymentStatus);
+    console.log('showQRModal:', showQRModal);
+    
     if (currentOrderId && paymentStatus === 'PENDING' && showQRModal) {
-      console.log('🔄 Bắt đầu polling trạng thái thanh toán cho đơn:', currentOrderId);
+      console.log('✅ POLLING CONDITIONS MET - STARTING POLLING');
+      console.log('🔄 POLLING STARTED FOR ORDER:', currentOrderId);
+      console.log('⏰ Tự động kiểm tra mỗi 3 giây...');
       
       pollingInterval = setInterval(async () => {
+        console.log('\n=== POLLING TICK ===');
+        console.log('⏰ CHECK PAYMENT STATUS AT:', new Date().toLocaleTimeString());
+        console.log('📋 ORDER ID:', currentOrderId);
+        
         try {
-          const response = await axios.get(`http://localhost:5000/api/order/payment-status/${currentOrderId}`);
+          const apiUrl = `http://localhost:5000/api/order/payment-status/${currentOrderId}`;
+          console.log('🌐 Calling API:', apiUrl);
+          
+          const response = await axios.get(apiUrl);
+          
+          console.log('📥 API RESPONSE RECEIVED:');
+          console.log('response.data:', JSON.stringify(response.data, null, 2));
+          
           if (response.data.success) {
             const { paymentStatus: status } = response.data.data;
-            console.log('📊 Trạng thái thanh toán:', status);
+            console.log('📊 PAYMENT STATUS:', status);
             
             if (status === 'PAID') {
+              console.log('\n🎉🎉🎉 PAID DETECTED!!! 🎉🎉🎉');
+              console.log('✅ Phát hiện thanh toán thành công!');
+              console.log('🔄 Đang thực hiện các actions...');
+              
+              console.log('1️⃣ setPaymentStatus("PAID")');
               setPaymentStatus('PAID');
+              
+              console.log('2️⃣ CLOSING PAYMENT MODAL - setShowQRModal(false)');
               setShowQRModal(false);
+              
+              console.log('3️⃣ OPEN SUCCESS MODAL - setShowSuccessModal(true)');
               setShowSuccessModal(true);
+              
+              console.log('4️⃣ clearInterval(pollingInterval)');
               clearInterval(pollingInterval);
               
-              // Hiển thị thông báo thành công
+              console.log('5️⃣ Hiển thị alert...');
               alert('✅ Thanh toán thành công! Đơn hàng đã được xác nhận.');
+              
+              console.log('✅ ALL ACTIONS COMPLETED');
+            } else {
+              console.log('⏳ Status is still:', status, '- Continue polling...');
             }
+          } else {
+            console.warn('⚠️ API response.data.success is false:', response.data);
           }
         } catch (error) {
-          console.error('Lỗi khi kiểm tra trạng thái:', error);
+          console.error('❌ LỖI KHI KIỂM TRA TRẠNG THÁI:', error);
+          console.error('Error details:', error.response?.data || error.message);
         }
-      }, 5000); // Kiểm tra mỗi 5 giây
+      }, 3000); // Kiểm tra mỗi 3 giây
+    } else {
+      console.log('❌ POLLING CONDITIONS NOT MET:');
+      if (!currentOrderId) console.log('  - currentOrderId is null/undefined');
+      if (paymentStatus !== 'PENDING') console.log('  - paymentStatus is not PENDING:', paymentStatus);
+      if (!showQRModal) console.log('  - showQRModal is false');
     }
 
     return () => {
       if (pollingInterval) {
+        console.log('🛑 CLEANUP - DỪNG POLLING');
         clearInterval(pollingInterval);
       }
     };
@@ -323,25 +375,91 @@ export default function SimCard({ sim }) {
     
     // Nếu chọn chuyển khoản, hiển thị QR code
     if (purchaseForm.paymentMethod === 'bank_transfer') {
+      console.log('\n=== BẮT ĐẦU QUY TRÌNH MUA SIM - CHUYỂN KHOẢN ===');
+      
+      // Validate form trước
+      if (!purchaseForm.phone || !purchaseForm.address) {
+        alert("Vui lòng điền đầy đủ số điện thoại và địa chỉ!");
+        return;
+      }
+      console.log('✅ Validation passed');
+
+      // Tạo đơn hàng TRƯỚC KHI hiển thị QR
+      setLoading(true);
+      console.log('📤 Đang gọi API tạo đơn hàng...');
+      
       try {
-        // Tạo link QR động theo chuẩn VietQR với số tiền cụ thể
+        const purchaseData = {
+          user_id: user.id,
+          user_name: user.name,
+          sim_number,
+          network,
+          price,
+          category,
+          customer_name: purchaseForm.fullName,
+          customer_phone: purchaseForm.phone,
+          customer_address: purchaseForm.address,
+          payment_method: 'bank_transfer'
+        };
+        console.log('📋 Purchase data:', purchaseData);
+        
+        const response = await axios.post("http://localhost:5000/api/purchase", purchaseData);
+        
+        console.log('📥 API Response:', response.data);
+
+        // Lưu orderId và bắt đầu polling
+        if (response.data.orderId) {
+          const newOrderId = response.data.orderId;
+          
+          console.log('✅ ORDER CREATED');
+          console.log('📥 Full response.data:', JSON.stringify(response.data, null, 2));
+          console.log('🆔 ORDER ID:', newOrderId);
+          
+          console.log('🔧 Calling setCurrentOrderId(' + newOrderId + ')');
+          setCurrentOrderId(newOrderId);
+          
+          console.log('🔧 Calling setPaymentStatus("PENDING")');
+          setPaymentStatus('PENDING');
+          
+          // Log state sẽ được update (chưa đồng bộ ngay)
+          console.log('⏳ State sẽ được update sau render tiếp theo...');
+        } else {
+          console.error('⚠️ WARNING: response.data.orderId is missing!');
+          console.error('Full response:', JSON.stringify(response.data, null, 2));
+        }
+
+        // Sau đó hiển thị QR code
         const bankId = "970436"; // Mã ngân hàng Vietcombank
         const accountNo = "1025311193";
         const accountName = "NGUYEN VO MINH THU";
         const amount = price; // Số tiền của sim
         const description = `MUASO${sim_number.replace(/\s/g, '')}`;
         
-        // API VietQR - tự động điền số tiền vào QR code
-        // Format: https://img.vietqr.io/image/BANK_ID-ACCOUNT_NO-TEMPLATE.jpg?amount=AMOUNT&addInfo=INFO&accountName=NAME
         const qrContent = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
         
-        console.log('QR URL:', qrContent); // Debug
+        console.log('🔗 QR URL:', qrContent);
+        console.log('🔧 Calling setQrCodeUrl()');
         setQrCodeUrl(qrContent);
+        
+        console.log('🔧 Calling setShowQRModal(true) - OPEN QR MODAL');
+        console.log('📊 Current state BEFORE setState:');
+        console.log('   - currentOrderId (old):', currentOrderId);
+        console.log('   - showQRModal (old):', showQRModal);
+        
         setShowQRModal(true);
+        
+        console.log('🔧 Calling setShowPurchaseModal(false)');
         setShowPurchaseModal(false);
+        
+        console.log('✅ All setState called - waiting for React to re-render...');
+        console.log('=== QUY TRÌNH TẠO ĐƠN HOÀN TẤT ===\n');
       } catch (error) {
-        console.error("QR generation error:", error);
-        alert("Không thể tạo mã QR. Vui lòng thử lại!");
+        console.error("❌ Purchase error:", error);
+        console.error("Error response:", error.response?.data);
+        const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
+        alert(errorMsg);
+      } finally {
+        setLoading(false);
       }
       return;
     }
@@ -382,52 +500,7 @@ export default function SimCard({ sim }) {
     }
   };
 
-  // Hàm xác nhận sau khi chuyển khoản
-  const handleConfirmTransfer = async () => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      alert("Vui lòng đăng nhập để mua sim!");
-      window.location.href = "/login";
-      return;
-    }
-
-    const user = JSON.parse(userData);
-    setLoading(true);
-
-    try {
-      // Lưu lịch sử mua hàng
-      const response = await axios.post("http://localhost:5000/api/purchase", {
-        user_id: user.id,
-        user_name: user.name,
-        sim_number,
-        network,
-        price,
-        category,
-        customer_name: purchaseForm.fullName,
-        customer_phone: purchaseForm.phone,
-        customer_address: purchaseForm.address,
-        payment_method: 'bank_transfer'
-      });
-
-      // Lưu orderId và bắt đầu polling
-      if (response.data.orderId) {
-        setCurrentOrderId(response.data.orderId);
-        setPaymentStatus('PENDING');
-        console.log('✅ Đã tạo đơn hàng:', response.data.orderId);
-        console.log('🔄 Đang chờ thanh toán... Polling sẽ tự động kiểm tra');
-      }
-      
-      // Không đóng QR modal, để người dùng thanh toán và polling tự động kiểm tra
-      // setShowQRModal vẫn mở, khi thanh toán thành công polling sẽ tự động đóng
-      
-    } catch (error) {
-      console.error("Purchase error:", error);
-      const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
-      alert(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Đã không cần handleConfirmTransfer nữa vì đơn hàng được tạo ngay khi hiển thị QR
 
   return (
     <>
@@ -867,8 +940,18 @@ export default function SimCard({ sim }) {
                 <li>Chọn tính năng "Quét mã QR"</li>
                 <li>Quét mã QR phía trên</li>
                 <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                <li>Nhấn "Đã thanh toán" bên dưới sau khi chuyển khoản xong</li>
+                <li>Hệ thống sẽ tự động cập nhật khi bạn chuyển khoản thành công</li>
               </ol>
+            </div>
+
+            {/* Auto-check indicator */}
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+              <div className="animate-pulse flex items-center justify-center">
+                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+              </div>
+              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                Hệ thống đang tự động kiểm tra thanh toán mỗi 3 giây...
+              </p>
             </div>
 
             {/* Buttons */}
@@ -883,16 +966,15 @@ export default function SimCard({ sim }) {
                 Quay lại
               </button>
               <button
-                onClick={handleConfirmTransfer}
-                disabled={loading}
-                className="flex-1 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg font-semibold transition disabled:opacity-50 text-sm"
+                onClick={() => setShowQRModal(false)}
+                className="flex-1 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg font-semibold transition text-sm"
               >
-                {loading ? "Đang xử lý..." : "Đã thanh toán"}
+                Đóng
               </button>
             </div>
 
             <p className="text-xs text-center text-gray-500 dark:text-gray-400 pt-1">
-              💡 Sau khi chuyển khoản, chúng tôi sẽ xác nhận và liên hệ với bạn trong vòng 24h
+              💡 Hệ thống sẽ tự động xác nhận sau khi bạn chuyển khoản thành công
             </p>
           </div>
         </div>

@@ -48,7 +48,6 @@ Dự án được xây dựng dựa trên mô hình **Client-Server (Frontend - 
 Mở một cửa sổ Terminal (dòng lệnh) và điều hướng vào thư mục backend, khởi chạy server:
 ```bash
 cd backend
-npm install
 node index.js
 ```
 *Server chạy thành công sẽ thông báo lắng nghe tại `http://localhost:5000`.*
@@ -57,7 +56,6 @@ node index.js
 Mở cửa sổ Terminal thứ hai và điều hướng vào thư mục frontend:
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 *Giao diện người dùng sẽ chạy tại `http://localhost:3000`.* Bạn chỉ cần truy cập vào đường link này bằng trình duyệt để trải nghiệm tính năng Gợi ý Sim AI.
