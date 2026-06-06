@@ -5,7 +5,7 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
   const [filters, setFilters] = useState({
     network: [],
     simType: [],
-    minPrice: 1000,
+    minPrice: 500000,
     maxPrice: 5000000,
     specialNumbers: "",
     anniversaryDate: "",
@@ -65,7 +65,7 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
     const resetFilters = {
       network: [],
       simType: [],
-      minPrice: 1000,
+      minPrice: 500000,
       maxPrice: 5000000,
       specialNumbers: "",
       anniversaryDate: "",
@@ -151,17 +151,23 @@ export default function AdvancedFilter({ onFilterChange, onClose }) {
           <input
             type="range"
             name="maxPrice"
-            min="1000"
+            min="500000"
             max="5000000"
-            step="100000"
+            step="50000"
             value={filters.maxPrice}
             onChange={handlePriceSliderChange}
-            className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
+            style={{
+              background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${((filters.maxPrice - 500000) / (5000000 - 500000)) * 100}%, #e5e7eb ${((filters.maxPrice - 500000) / (5000000 - 500000)) * 100}%, #e5e7eb 100%)`
+            }}
           />
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-            <span>1.000 đ</span>
+            <span>500.000 đ</span>
             <span>5.000.000 đ</span>
           </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+            💡 Kéo thanh để xem sim từ 500.000đ đến {formatPrice(filters.maxPrice)}đ
+          </p>
         </div>
 
         {/* Số đặc biệt */}

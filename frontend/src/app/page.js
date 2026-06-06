@@ -302,7 +302,7 @@ export default function Home() {
                     <input
                       type="range"
                       name="priceLimit"
-                      min="1000"
+                      min="500000"
                       max="5000000"
                       step="100000"
                       value={formData.priceLimit}
@@ -310,7 +310,7 @@ export default function Home() {
                       className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary mt-3"
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-1">
-                      <span>1.000đ</span>
+                      <span>500.000đ</span>
                       <span>5.000.000đ</span>
                     </div>
                   </div>
