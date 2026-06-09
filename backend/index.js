@@ -238,6 +238,43 @@ app.get('/api/sims', async (req, res) => {
   }
 });
 
+// API lấy sim nổi bật (được tìm kiếm nhiều nhất) - PHẢI ĐẶT TRƯỚC /api/sims/:id
+app.get('/api/sims/popular', async (req, res) => {
+  try {
+    // Lấy 8 sim được tìm kiếm nhiều nhất và chưa bán
+    const [rows] = await pool.query(
+      `SELECT * FROM the_sim 
+       WHERE trang_thai = 'Còn hàng' 
+       ORDER BY so_lan_tim_kiem DESC, gia_ban ASC 
+       LIMIT 8`
+    );
+    
+    const simsWithScore = rows.map(sim => ({
+      ...sim,
+      id: sim.ma_sim,
+      sim_number: sim.so_sim,
+      network: sim.nha_mang,
+      price: sim.gia_ban,
+      category: sim.loai_sim,
+      feng_shui_element: sim.menh_phong_thuy,
+      total_nodes: sim.diem_nut,
+      status: sim.trang_thai,
+      description: sim.mo_ta,
+      search_count: sim.so_lan_tim_kiem || 0,
+      suitabilityScore: sim.so_lan_tim_kiem || 0, // Dùng số lần tìm kiếm làm điểm
+      explainableAI: []
+    }));
+    
+    res.json({
+      success: true,
+      data: simsWithScore
+    });
+  } catch (error) {
+    console.error('Error fetching popular sims:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 // API tăng số lần tìm kiếm sim
 app.put('/api/sims/:id/increment-search', async (req, res) => {
   try {

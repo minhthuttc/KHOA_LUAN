@@ -19,7 +19,34 @@ export default function Home() {
   const [searched, setSearched] = useState(false);
   const [purposeSuggestions, setPurposeSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [popularSims, setPopularSims] = useState([]); // Sim được tìm nhiều nhất
   const debounceTimer = useRef(null);
+
+  // Fetch sim nổi bật khi component mount
+  useEffect(() => {
+    fetchPopularSims();
+  }, []);
+
+  const fetchPopularSims = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/sims/popular");
+      if (res.data.success) {
+        const mappedData = res.data.data.map(sim => ({
+          ...sim,
+          sim_number: sim.so_sim,
+          network: sim.nha_mang,
+          price: sim.gia_ban,
+          category: sim.loai_sim,
+          status: sim.trang_thai,
+          description: sim.mo_ta,
+          suitabilityScore: 0, // Không có điểm AI cho sim phổ biến
+        }));
+        setPopularSims(mappedData);
+      }
+    } catch (err) {
+      console.error("Error fetching popular sims:", err);
+    }
+  };
 
   // Auto-fill birth date if user is logged in
   useEffect(() => {
@@ -365,8 +392,16 @@ export default function Home() {
           </div>
 
           {!searched && (
-             <div className="text-center text-gray-500 py-12">
-               Hãy điền thông tin để bắt đầu trải nghiệm AI Recommendation.
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+               {popularSims.length > 0 ? (
+                 popularSims.map((sim, index) => (
+                   <SimCard key={`popular-${sim.id}-${index}`} sim={sim} />
+                 ))
+               ) : (
+                 <div className="col-span-full text-center text-gray-500 py-12">
+                   Hãy điền thông tin để bắt đầu trải nghiệm AI Recommendation.
+                 </div>
+               )}
              </div>
           )}
 
