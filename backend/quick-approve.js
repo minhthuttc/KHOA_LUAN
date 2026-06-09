@@ -59,9 +59,19 @@ async function approveOrder() {
       ['PAID', transactionId, orderId]
     );
 
-    console.log('✅ UPDATED!');
+    console.log('✅ ORDER UPDATED TO PAID!');
     console.log('   Transaction ID:', transactionId);
     console.log('');
+    
+    // CẬP NHẬT SIM THÀNH "ĐÃ BÁN"
+    console.log('🔄 Updating sim to "Đã bán"...');
+    await pool.query(
+      'UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?',
+      ['Đã bán', order.so_sim]
+    );
+    console.log('✅ Sim', order.so_sim, 'marked as "Đã bán"');
+    console.log('');
+    
     console.log('⏰ Polling will detect in ~3 seconds...');
     console.log('💡 Check browser console for auto-update!');
     console.log('');

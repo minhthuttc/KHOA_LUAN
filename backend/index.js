@@ -289,6 +289,10 @@ app.put('/api/sims/:id/increment-search', async (req, res) => {
 
 // API mua sim (tạo đơn hàng)
 app.post('/api/purchase', async (req, res) => {
+  console.log('\n🔵 === POST /api/purchase RECEIVED ===');
+  console.log('📥 Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('');
+  
   try {
     const { 
       user_id, 
@@ -302,17 +306,70 @@ app.post('/api/purchase', async (req, res) => {
       customer_address,
       payment_method
     } = req.body;
+    
+    console.log('📋 Extracted fields:');
+    console.log('  - user_id:', user_id);
+    console.log('  - user_name:', user_name);
+    console.log('  - sim_number:', sim_number);
+    console.log('  - network:', network);
+    console.log('  - price:', price);
+    console.log('  - category:', category);
+    console.log('  - customer_name:', customer_name);
+    console.log('  - customer_phone:', customer_phone);
+    console.log('  - customer_address:', customer_address);
+    console.log('  - payment_method:', payment_method);
+    console.log('');
+
+    // Validation
+    if (!user_id || !user_name || !sim_number || !network || !price || !category || 
+        !customer_name || !customer_phone || !customer_address || !payment_method) {
+      console.error('❌ VALIDATION FAILED - Missing required fields:');
+      if (!user_id) console.error('  - user_id is missing');
+      if (!user_name) console.error('  - user_name is missing');
+      if (!sim_number) console.error('  - sim_number is missing');
+      if (!network) console.error('  - network is missing');
+      if (!price) console.error('  - price is missing');
+      if (!category) console.error('  - category is missing');
+      if (!customer_name) console.error('  - customer_name is missing');
+      if (!customer_phone) console.error('  - customer_phone is missing');
+      if (!customer_address) console.error('  - customer_address is missing');
+      if (!payment_method) console.error('  - payment_method is missing');
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Thiếu thông tin bắt buộc',
+        missing: {
+          user_id: !user_id,
+          user_name: !user_name,
+          sim_number: !sim_number,
+          network: !network,
+          price: !price,
+          category: !category,
+          customer_name: !customer_name,
+          customer_phone: !customer_phone,
+          customer_address: !customer_address,
+          payment_method: !payment_method
+        }
+      });
+    }
+    
+    console.log('✅ Validation passed');
 
     // Kiểm tra sim còn hàng không
+    console.log('🔍 Checking if sim is available...');
     const [simCheck] = await pool.query('SELECT trang_thai FROM the_sim WHERE so_sim = ?', [sim_number]);
     if (simCheck.length === 0) {
+      console.error('❌ Sim not found:', sim_number);
       return res.status(404).json({ success: false, message: 'Không tìm thấy sim' });
     }
     if (simCheck[0].trang_thai === 'Đã bán') {
+      console.error('❌ Sim already sold:', sim_number);
       return res.status(400).json({ success: false, message: 'Sim đã được đặt mua' });
     }
+    console.log('✅ Sim is available');
 
     // Tạo đơn hàng
+    console.log('💾 Creating order in database...');
     const [result] = await pool.query(
       `INSERT INTO don_hang (ma_nguoi_dung, ten_nguoi_dung, so_sim, nha_mang, gia_mua, loai_sim, 
        ten_khach_hang, sdt_khach_hang, dia_chi_khach_hang, phuong_thuc_thanh_toan, trang_thai, payment_status) 
@@ -322,19 +379,26 @@ app.post('/api/purchase', async (req, res) => {
     );
 
     const orderId = result.insertId;
+    console.log('✅ Order created with ID:', orderId);
 
-    // Cập nhật trạng thái sim thành "Đã bán"
-    await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Đã bán', sim_number]);
+    // KHÔNG CẬP NHẬT SIM NGAY - chỉ cập nhật khi thanh toán thành công
+    console.log('ℹ️ Sim will be marked as "Đã bán" only after payment is confirmed');
 
-    res.json({ 
+    const responseData = { 
       success: true, 
       message: 'Đặt mua sim thành công! Chúng tôi sẽ liên hệ với bạn sớm.',
       orderId: orderId,
       simNumber: sim_number
-    });
+    };
+    
+    console.log('📤 Sending response:', JSON.stringify(responseData, null, 2));
+    console.log('=== END /api/purchase ===\n');
+    
+    res.json(responseData);
   } catch (error) {
-    console.error('Error in /api/purchase:', error);
-    res.status(500).json({ success: false, message: 'Lỗi server khi tạo đơn hàng' });
+    console.error('❌ ERROR in /api/purchase:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ success: false, message: 'Lỗi server khi tạo đơn hàng', error: error.message });
   }
 });
 
@@ -897,6 +961,17 @@ app.post('/api/webhook/bank-transfer', async (req, res) => {
     console.log('✅ UPDATE COMPLETED!');
     console.log('   - Rows affected:', updateResult.affectedRows);
     console.log('');
+    
+    // CẬP NHẬT SIM THÀNH "ĐÃ BÁN" SAU KHI THANH TOÁN THÀNH CÔNG
+    console.log('🔄 Updating sim status to "Đã bán"...');
+    const [simUpdateResult] = await pool.query(
+      'UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?',
+      ['Đã bán', simNumber]
+    );
+    console.log('✅ Sim status updated to "Đã bán"');
+    console.log('   - Rows affected:', simUpdateResult.affectedRows);
+    console.log('');
+    
     console.log(`🎉 Đã tự động duyệt đơn hàng #${order.ma_don_hang} - Sim: ${simNumber}`);
     console.log('⏰ Frontend polling sẽ phát hiện trong ~3 giây...');
     console.log('===== END WEBHOOK ===== \n');

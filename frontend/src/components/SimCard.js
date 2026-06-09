@@ -29,6 +29,14 @@ export default function SimCard({ sim }) {
     console.log('showQRModal:', showQRModal);
     console.log('showSuccessModal:', showSuccessModal);
     console.log('======================\n');
+    
+    // Kiểm tra điều kiện để mở Success Modal
+    if (paymentStatus === 'PAID' && !showQRModal && showSuccessModal) {
+      console.log('🎉 SUCCESS MODAL SHOULD BE VISIBLE NOW!');
+      console.log('   - paymentStatus = PAID ✓');
+      console.log('   - showQRModal = false ✓');
+      console.log('   - showSuccessModal = true ✓');
+    }
   }, [currentOrderId, paymentStatus, showQRModal, showSuccessModal]);
 
   // Polling để kiểm tra trạng thái thanh toán TỰ ĐỘNG - DEBUG VERSION
@@ -67,23 +75,33 @@ export default function SimCard({ sim }) {
               console.log('\n🎉🎉🎉 PAID DETECTED!!! 🎉🎉🎉');
               console.log('✅ Phát hiện thanh toán thành công!');
               console.log('🔄 Đang thực hiện các actions...');
+              console.log('');
               
-              console.log('1️⃣ setPaymentStatus("PAID")');
+              console.log('BEFORE setState:');
+              console.log('  - paymentStatus (current):', paymentStatus);
+              console.log('  - showQRModal (current):', showQRModal);
+              console.log('  - showSuccessModal (current):', showSuccessModal);
+              console.log('');
+              
+              console.log('1️⃣ Calling setPaymentStatus("PAID")...');
               setPaymentStatus('PAID');
               
-              console.log('2️⃣ CLOSING PAYMENT MODAL - setShowQRModal(false)');
+              console.log('2️⃣ CLOSING QR MODAL - Calling setShowQRModal(false)...');
               setShowQRModal(false);
               
-              console.log('3️⃣ OPEN SUCCESS MODAL - setShowSuccessModal(true)');
+              console.log('3️⃣ OPENING SUCCESS MODAL - Calling setShowSuccessModal(true)...');
               setShowSuccessModal(true);
               
-              console.log('4️⃣ clearInterval(pollingInterval)');
+              console.log('4️⃣ Clearing interval...');
               clearInterval(pollingInterval);
               
-              console.log('5️⃣ Hiển thị alert...');
+              console.log('5️⃣ Showing alert...');
               alert('✅ Thanh toán thành công! Đơn hàng đã được xác nhận.');
               
-              console.log('✅ ALL ACTIONS COMPLETED');
+              console.log('');
+              console.log('✅ ALL SETSTATE CALLS COMPLETED');
+              console.log('⏳ Waiting for React to re-render...');
+              console.log('   Next, check STATE CHANGED log to confirm state updates');
             } else {
               console.log('⏳ Status is still:', status, '- Continue polling...');
             }
@@ -401,8 +419,12 @@ export default function SimCard({ sim }) {
           customer_address: purchaseForm.address,
           payment_method: 'bank_transfer'
         };
-        console.log('📋 Purchase data:', purchaseData);
         
+        console.log('📋 PURCHASE REQUEST DATA:');
+        console.log(JSON.stringify(purchaseData, null, 2));
+        console.log('');
+        
+        console.log('🌐 Calling API: POST http://localhost:5000/api/purchase');
         const response = await axios.post("http://localhost:5000/api/purchase", purchaseData);
         
         console.log('📥 API Response:', response.data);
@@ -454,10 +476,16 @@ export default function SimCard({ sim }) {
         console.log('✅ All setState called - waiting for React to re-render...');
         console.log('=== QUY TRÌNH TẠO ĐƠN HOÀN TẤT ===\n');
       } catch (error) {
-        console.error("❌ Purchase error:", error);
-        console.error("Error response:", error.response?.data);
+        console.error('\n❌❌❌ PURCHASE ERROR ❌❌❌');
+        console.error('Error object:', error);
+        console.error('Error message:', error.message);
+        console.error('Error response:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        console.error('Error headers:', error.response?.headers);
+        console.error('');
+        
         const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
-        alert(errorMsg);
+        alert(`❌ LỖI MUA SIM:\n\n${errorMsg}\n\nChi tiết: ${JSON.stringify(error.response?.data, null, 2)}`);
       } finally {
         setLoading(false);
       }
@@ -560,7 +588,9 @@ export default function SimCard({ sim }) {
             <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
               {getShortDescription()}
             </p>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={async () => {
                 setShowDetailModal(true);
                 try {
@@ -572,11 +602,17 @@ export default function SimCard({ sim }) {
                   // silent fail
                 }
               }}
-              className="mt-3 text-primary hover:text-primary-hover text-sm font-medium flex items-center gap-1"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowDetailModal(true);
+                }
+              }}
+              className="mt-3 text-primary hover:text-primary-hover text-sm font-medium flex items-center gap-1 cursor-pointer"
             >
               <Info className="w-4 h-4" />
               Xem chi tiết
-            </button>
+            </div>
           </>
         )}
       </div>
@@ -870,7 +906,10 @@ export default function SimCard({ sim }) {
     )}
 
     {/* QR Code Modal */}
-    {showQRModal && (
+    {showQRModal && (() => {
+      console.log('🔵 RENDERING QR MODAL - showQRModal =', showQRModal);
+      return true;
+    })() && (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-dark-lighter rounded-2xl max-w-lg w-full shadow-2xl max-h-[95vh] overflow-y-auto">
           {/* Header */}
@@ -982,7 +1021,10 @@ export default function SimCard({ sim }) {
     )}
 
     {/* Success Modal */}
-    {showSuccessModal && (
+    {showSuccessModal && (() => {
+      console.log('🟢 RENDERING SUCCESS MODAL - showSuccessModal =', showSuccessModal);
+      return true;
+    })() && (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-dark-lighter rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Success Icon - Fixed Header */}
