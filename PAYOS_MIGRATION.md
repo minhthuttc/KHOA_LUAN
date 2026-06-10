@@ -1,5 +1,32 @@
 # PayOS Migration Documentation
 
+# PayOS Migration Documentation
+
+## ✅ COMPLETED - Latest Fix: QR Code Display
+
+**Issue**: QR code image not displaying in payment modal  
+**Root Cause**: PayOS API returns `qrCode` as raw EMVCo QR data string, not an image URL  
+**Solution**: Use `qrcode` npm library to generate QR image from data string
+
+```javascript
+// PayOS returns raw QR data string:
+const payosResponse = {
+  qrCode: "00020101021238570010A000000727012700069704220113VQRQAJPOJ415...",
+  checkoutUrl: "https://pay.payos.vn/web/..."
+};
+
+// Convert to image using qrcode library:
+const qrImageUrl = await QRCode.toDataURL(payosResponse.qrCode, {
+  width: 400,
+  margin: 2
+});
+// Now qrImageUrl = "data:image/png;base64,iVBORw0KGgo..."
+```
+
+**Files Changed**: `frontend/src/components/SimCard.js`
+
+---
+
 ## Overview
 Migrated from custom bank transfer matching to official PayOS payment gateway integration.
 

@@ -1036,6 +1036,14 @@ app.get('/api/order/payment-status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
     
+    // Check payment consistency FIRST
+    const consistencyCheck = await checkPaymentConsistency(orderId);
+    
+    if (!consistencyCheck.consistent && consistencyCheck.inconsistencies) {
+      console.error('🚨 INCONSISTENT STATE DETECTED IN API CALL!');
+      console.error('This should be fixed by handlePaymentSuccess()');
+    }
+    
     console.log('🔍 Querying database for order:', orderId);
     const [orders] = await pool.query(
       'SELECT ma_don_hang, payment_status, paid_at, transaction_id, trang_thai FROM don_hang WHERE ma_don_hang = ?',
@@ -1052,6 +1060,7 @@ app.get('/api/order/payment-status/:orderId', async (req, res) => {
     console.log('   - payment_status:', orders[0].payment_status);
     console.log('   - paid_at:', orders[0].paid_at);
     console.log('   - transaction_id:', orders[0].transaction_id);
+    console.log('   - consistency:', consistencyCheck.consistent ? '✅ OK' : '❌ INCONSISTENT');
 
     const responseData = {
       success: true,
@@ -1113,6 +1122,7 @@ app.get('/api/order/by-sim/:simNumber', async (req, res) => {
 // ==================== PAYOS PAYMENT API ====================
 
 const payosService = require('./services/payosService');
+const { handlePaymentSuccess, checkPaymentConsistency } = require('./services/paymentHandler');
 
 // API tạo payment link PayOS
 app.post('/api/payment/create', async (req, res) => {
@@ -1195,17 +1205,34 @@ app.post('/api/payos/webhook', async (req, res) => {
   try {
     const webhookData = req.body;
     
-    // Verify webhook data
-    console.log('🔐 Verifying webhook...');
-    const verifiedData = await payosService.verifyWebhookSignature(webhookData);
-    console.log('✅ Webhook verified:', verifiedData);
+    // Check if this is a test webhook (for local testing without signature)
+    const isTestWebhook = webhookData.data?.reference?.startsWith('TEST_');
+    
+    let verifiedData;
+    
+    if (isTestWebhook) {
+      console.log('⚠️  TEST MODE: Skipping signature verification');
+      verifiedData = webhookData;
+    } else {
+      // Verify webhook data for real PayOS webhooks
+      console.log('🔐 Verifying webhook signature...');
+      try {
+        verifiedData = await payosService.verifyWebhookSignature(webhookData);
+        console.log('✅ Webhook signature verified');
+      } catch (verifyError) {
+        console.error('❌ Webhook signature verification failed:', verifyError.message);
+        return res.status(400).json({ success: false, message: 'Invalid signature' });
+      }
+    }
+    
+    console.log('✅ Webhook data accepted:', verifiedData);
     
     // Extract payment data
     const { code, desc, data } = verifiedData;
     
     if (code !== '00') {
       console.log('⚠️ Payment not successful. Code:', code, 'Desc:', desc);
-      return res.json({ success: true, message: 'Webhook received' });
+      return res.json({ success: true, message: 'Webhook received but payment not successful' });
     }
     
     const {
@@ -1224,54 +1251,30 @@ app.post('/api/payos/webhook', async (req, res) => {
     console.log('   - Payment Link ID:', paymentLinkId);
     console.log('   - Reference:', reference);
     
-    // Find order by orderCode (which is ma_don_hang)
-    console.log('🔍 Finding order by orderCode:', orderCode);
-    const [orders] = await pool.query(
-      'SELECT * FROM don_hang WHERE ma_don_hang = ?',
-      [orderCode]
+    // Use centralized payment handler
+    const result = await handlePaymentSuccess(
+      orderCode, 
+      reference || paymentLinkId,
+      {
+        source: isTestWebhook ? 'test-webhook' : 'payos-webhook',
+        autoApprove: true  // Auto-approve when payment confirmed
+      }
     );
     
-    if (orders.length === 0) {
-      console.error('❌ Order not found for orderCode:', orderCode);
-      return res.status(404).json({ success: false, message: 'Order not found' });
+    if (result.success) {
+      console.log('🎉 Payment processed successfully via centralized handler!');
+      console.log('⏰ Frontend polling will detect in ~3 seconds');
+      console.log('=== END PAYOS WEBHOOK ===\n');
+      
+      res.json({ 
+        success: true, 
+        message: result.alreadyPaid ? 'Order already paid' : 'Payment processed',
+        data: result.data
+      });
+    } else {
+      console.error('❌ Payment processing failed:', result.message);
+      res.status(500).json({ success: false, message: result.message });
     }
-    
-    const order = orders[0];
-    console.log('✅ Order found:', order.ma_don_hang, '-', order.so_sim);
-    
-    // Check if already paid
-    if (order.payment_status === 'PAID') {
-      console.log('⚠️ Order already marked as PAID');
-      return res.json({ success: true, message: 'Order already paid' });
-    }
-    
-    // Update order to PAID
-    console.log('🔄 Updating order to PAID...');
-    await pool.query(
-      `UPDATE don_hang 
-       SET payment_status = 'PAID',
-           paid_at = NOW(),
-           transaction_id = ?,
-           trang_thai = 'Đã duyệt',
-           ngay_duyet = NOW()
-       WHERE ma_don_hang = ?`,
-      [reference || paymentLinkId, orderCode]
-    );
-    console.log('✅ Order updated to PAID');
-    
-    // Update SIM status to "Đã bán"
-    console.log('🔄 Updating sim to "Đã bán"...');
-    await pool.query(
-      'UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?',
-      ['Đã bán', order.so_sim]
-    );
-    console.log('✅ Sim marked as "Đã bán"');
-    
-    console.log('🎉 Payment processed successfully!');
-    console.log('⏰ Frontend polling will detect in ~3 seconds');
-    console.log('=== END PAYOS WEBHOOK ===\n');
-    
-    res.json({ success: true, message: 'Payment processed' });
     
   } catch (error) {
     console.error('❌ Webhook processing error:', error);

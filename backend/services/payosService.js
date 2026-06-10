@@ -20,12 +20,19 @@ async function createPaymentLink(orderData) {
   console.log('📋 Order Data:', orderData);
   
   try {
+    // Ensure amount is a positive integer
+    const validAmount = Math.floor(Math.abs(Number(amount)));
+    
+    if (validAmount <= 0 || isNaN(validAmount)) {
+      throw new Error(`Invalid amount: ${amount}. Amount must be a positive number.`);
+    }
+    
+    console.log('💰 Validated amount:', validAmount);
+    
     const paymentData = {
-      orderCode: orderCode || orderId,
-      amount: amount,
-      description: description || `Thanh toán đơn hàng #${orderId}`,
-      buyerName: buyerName,
-      buyerPhone: buyerPhone,
+      orderCode: Number(orderCode || orderId),
+      amount: validAmount,
+      description: description || `Thanh toan don hang #${orderId}`,
       cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/tai-khoan`,
       returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/tai-khoan?orderId=${orderId}&status=success`
     };
@@ -50,6 +57,11 @@ async function createPaymentLink(orderData) {
     };
   } catch (error) {
     console.error('❌ PayOS Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      amount: amount,
+      orderData: orderData
+    });
     throw new Error(`PayOS payment link creation failed: ${error.message}`);
   }
 }

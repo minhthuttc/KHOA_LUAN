@@ -10,7 +10,9 @@ export default function SimCard({ sim }) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState(""); // Rendered QR image data URL
+  const [qrCodeData, setQrCodeData] = useState(""); // Raw QR string from PayOS
+  const [checkoutUrl, setCheckoutUrl] = useState("");
   const [currentOrderId, setCurrentOrderId] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const [purchaseForm, setPurchaseForm] = useState({
@@ -447,13 +449,46 @@ export default function SimCard({ sim }) {
             console.log('   - checkoutUrl:', paymentResponse.data.checkoutUrl);
             console.log('   - qrCode:', paymentResponse.data.qrCode);
             console.log('   - paymentLinkId:', paymentResponse.data.paymentLinkId);
+            console.log('Full PayOS response:', JSON.stringify(paymentResponse.data, null, 2));
             
             // Save state
             setCurrentOrderId(newOrderId);
             setPaymentStatus('PENDING');
             
-            // Set PayOS QR code URL
-            setQrCodeUrl(paymentResponse.data.qrCode);
+            // Set PayOS checkout URL
+            setCheckoutUrl(paymentResponse.data.checkoutUrl);
+            
+            // Generate QR code image from PayOS qrCode data string
+            const qrDataString = paymentResponse.data.qrCode;
+            console.log('🔷 Generating QR image from PayOS data string...');
+            console.log('   - QR data length:', qrDataString?.length);
+            
+            if (qrDataString) {
+              try {
+                // Generate QR code image as data URL
+                const qrImageUrl = await QRCode.toDataURL(qrDataString, {
+                  width: 400,
+                  margin: 2,
+                  color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                  }
+                });
+                setQrCodeUrl(qrImageUrl);
+                setQrCodeData(qrDataString);
+                console.log('✅ QR image generated successfully');
+                console.log('   - Image URL starts with:', qrImageUrl.substring(0, 30));
+              } catch (qrError) {
+                console.error('❌ Failed to generate QR image:', qrError);
+                setQrCodeUrl(''); // Will show checkout button instead
+              }
+            }
+            
+            console.log('💾 Saved to state:');
+            console.log('   - qrCodeUrl:', qrCodeUrl ? 'Generated' : 'Failed');
+            console.log('   - checkoutUrl:', paymentResponse.data.checkoutUrl);
+            console.log('   - Type of qrCode:', typeof paymentResponse.data.qrCode);
+            console.log('   - Type of checkoutUrl:', typeof paymentResponse.data.checkoutUrl);
             
             // Open QR Modal
             setShowQRModal(true);
@@ -918,24 +953,53 @@ export default function SimCard({ sim }) {
           {/* Content */}
           <div className="p-4 space-y-4">
             {/* PayOS QR Code */}
-            <div className="bg-white border-4 border-primary/20 rounded-xl p-2 flex justify-center items-center min-h-[320px]">
+            <div className="bg-white border-4 border-primary/20 rounded-xl p-2 flex flex-col justify-center items-center min-h-[320px]">
               {qrCodeUrl ? (
-                <img 
-                  src={qrCodeUrl} 
-                  alt="PayOS QR Code thanh toán" 
-                  className="w-80 h-80 object-contain"
-                  onError={(e) => {
-                    console.error('PayOS QR Image load error:', e);
-                    e.target.onerror = null;
-                  }}
-                />
+                <>
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="PayOS QR Code thanh toán" 
+                    className="w-80 h-80 object-contain"
+                    onLoad={() => console.log('✅ QR image loaded successfully')}
+                    onError={(e) => {
+                      console.error('❌ QR image failed to load:', e);
+                      console.error('QR URL:', qrCodeUrl);
+                      e.target.style.display = 'none';
+                      const errorDiv = e.target.nextElementSibling;
+                      if (errorDiv) errorDiv.style.display = 'block';
+                    }}
+                  />
+                  <div style={{display: 'none'}} className="text-center p-4">
+                    <p className="text-red-500 mb-4">❌ Không thể hiển thị QR code</p>
+                    <p className="text-sm text-gray-600 mb-4">Vui lòng sử dụng link thanh toán bên dưới</p>
+                  </div>
+                </>
               ) : (
                 <div className="text-center text-gray-500">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm">Đang tạo mã QR PayOS...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-sm font-medium">Đang tạo mã QR PayOS...</p>
+                  <p className="text-xs text-gray-400 mt-2">Vui lòng đợi trong giây lát</p>
                 </div>
               )}
             </div>
+            
+            {/* Checkout URL Button - Always show as alternative */}
+            {checkoutUrl && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {qrCodeUrl ? 'Hoặc thanh toán qua link:' : 'Thanh toán qua link:'}
+                </p>
+                <a 
+                  href={checkoutUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-lg font-semibold transition shadow-lg hover:shadow-xl"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Mở trang thanh toán PayOS
+                </a>
+              </div>
+            )}
 
             {/* Payment Info */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">

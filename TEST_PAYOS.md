@@ -1,5 +1,33 @@
 # TEST PAYOS INTEGRATION
 
+# TEST PAYOS INTEGRATION
+
+## ✅ LATEST FIX (QR Code Display Issue):
+
+### PROBLEM:
+QR code was not displaying. Browser console showed "PayOS QR Image load error"
+
+### ROOT CAUSE:
+PayOS API returns `qrCode` as a **raw QR data string** (EMVCo format), NOT an image URL.
+Example: `"00020101021238570010A000000727012700069704220113VQRQAJPOJ41560208QRIBFTTA530370454061000005802VN62140810Test order6304175D"`
+
+### SOLUTION:
+Use the `qrcode` library to **generate QR image** from PayOS qrCode data string:
+```javascript
+const qrImageUrl = await QRCode.toDataURL(paymentResponse.data.qrCode, {
+  width: 400,
+  margin: 2
+});
+setQrCodeUrl(qrImageUrl); // Now it's a data:image/png;base64,... URL
+```
+
+### CHANGES:
+1. **frontend/src/components/SimCard.js**:
+   - Added `qrCodeData` state to store raw PayOS string
+   - Use `QRCode.toDataURL()` to convert PayOS string to image
+   - Always show "Mở trang thanh toán PayOS" button as alternative
+   - Better error handling with fallback to checkout URL
+
 ## LỖI ĐÃ SỬA:
 ✅ Import PayOS: Changed to `const { PayOS } = require('@payos/node')`
 
