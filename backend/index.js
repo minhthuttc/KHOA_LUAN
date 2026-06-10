@@ -1110,6 +1110,176 @@ app.get('/api/order/by-sim/:simNumber', async (req, res) => {
   }
 });
 
+// ==================== PAYOS PAYMENT API ====================
+
+const payosService = require('./services/payosService');
+
+// API tạo payment link PayOS
+app.post('/api/payment/create', async (req, res) => {
+  console.log('\n🔷 === POST /api/payment/create ===');
+  console.log('📥 Request body:', req.body);
+  
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' });
+    }
+    
+    // Load order from database
+    console.log('🔍 Loading order:', orderId);
+    const [orders] = await pool.query(
+      'SELECT * FROM don_hang WHERE ma_don_hang = ?',
+      [orderId]
+    );
+    
+    if (orders.length === 0) {
+      console.error('❌ Order not found:', orderId);
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+    
+    const order = orders[0];
+    console.log('✅ Order loaded:', order.so_sim, '-', order.gia_mua, 'VNĐ');
+    
+    // Check if already PAID
+    if (order.payment_status === 'PAID') {
+      console.log('⚠️ Order already paid');
+      return res.status(400).json({ success: false, message: 'Order already paid' });
+    }
+    
+    // Create PayOS payment link
+    const paymentLink = await payosService.createPaymentLink({
+      orderId: order.ma_don_hang,
+      orderCode: order.ma_don_hang,
+      amount: order.gia_mua,
+      description: `Mua sim ${order.so_sim}`,
+      buyerName: order.ten_khach_hang,
+      buyerPhone: order.sdt_khach_hang
+    });
+    
+    // Save payment link ID to database
+    console.log('💾 Saving paymentLinkId to database...');
+    await pool.query(
+      'UPDATE don_hang SET transaction_id = ? WHERE ma_don_hang = ?',
+      [paymentLink.paymentLinkId, orderId]
+    );
+    console.log('✅ PaymentLinkId saved');
+    
+    console.log('📤 Returning payment link to frontend');
+    console.log('=== END /api/payment/create ===\n');
+    
+    res.json({
+      success: true,
+      checkoutUrl: paymentLink.checkoutUrl,
+      qrCode: paymentLink.qrCode,
+      paymentLinkId: paymentLink.paymentLinkId,
+      orderCode: paymentLink.orderCode
+    });
+    
+  } catch (error) {
+    console.error('❌ Error creating payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create payment link',
+      error: error.message 
+    });
+  }
+});
+
+// ==================== PAYOS WEBHOOK ====================
+
+app.post('/api/payos/webhook', async (req, res) => {
+  console.log('\n🔔 === PAYOS WEBHOOK RECEIVED ===');
+  console.log('📥 Webhook data:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const webhookData = req.body;
+    
+    // Verify webhook data
+    console.log('🔐 Verifying webhook...');
+    const verifiedData = await payosService.verifyWebhookSignature(webhookData);
+    console.log('✅ Webhook verified:', verifiedData);
+    
+    // Extract payment data
+    const { code, desc, data } = verifiedData;
+    
+    if (code !== '00') {
+      console.log('⚠️ Payment not successful. Code:', code, 'Desc:', desc);
+      return res.json({ success: true, message: 'Webhook received' });
+    }
+    
+    const {
+      orderCode,
+      amount,
+      description,
+      accountNumber,
+      reference,
+      transactionDateTime,
+      paymentLinkId
+    } = data;
+    
+    console.log('💰 Payment successful:');
+    console.log('   - Order Code:', orderCode);
+    console.log('   - Amount:', amount);
+    console.log('   - Payment Link ID:', paymentLinkId);
+    console.log('   - Reference:', reference);
+    
+    // Find order by orderCode (which is ma_don_hang)
+    console.log('🔍 Finding order by orderCode:', orderCode);
+    const [orders] = await pool.query(
+      'SELECT * FROM don_hang WHERE ma_don_hang = ?',
+      [orderCode]
+    );
+    
+    if (orders.length === 0) {
+      console.error('❌ Order not found for orderCode:', orderCode);
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+    
+    const order = orders[0];
+    console.log('✅ Order found:', order.ma_don_hang, '-', order.so_sim);
+    
+    // Check if already paid
+    if (order.payment_status === 'PAID') {
+      console.log('⚠️ Order already marked as PAID');
+      return res.json({ success: true, message: 'Order already paid' });
+    }
+    
+    // Update order to PAID
+    console.log('🔄 Updating order to PAID...');
+    await pool.query(
+      `UPDATE don_hang 
+       SET payment_status = 'PAID',
+           paid_at = NOW(),
+           transaction_id = ?,
+           trang_thai = 'Đã duyệt',
+           ngay_duyet = NOW()
+       WHERE ma_don_hang = ?`,
+      [reference || paymentLinkId, orderCode]
+    );
+    console.log('✅ Order updated to PAID');
+    
+    // Update SIM status to "Đã bán"
+    console.log('🔄 Updating sim to "Đã bán"...');
+    await pool.query(
+      'UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?',
+      ['Đã bán', order.so_sim]
+    );
+    console.log('✅ Sim marked as "Đã bán"');
+    
+    console.log('🎉 Payment processed successfully!');
+    console.log('⏰ Frontend polling will detect in ~3 seconds');
+    console.log('=== END PAYOS WEBHOOK ===\n');
+    
+    res.json({ success: true, message: 'Payment processed' });
+    
+  } catch (error) {
+    console.error('❌ Webhook processing error:', error);
+    console.error('Error details:', error.message);
+    res.status(500).json({ success: false, message: 'Webhook processing failed', error: error.message });
+  }
+});
+
 // ==================== SERVER ====================
 
 const PORT = 5000;

@@ -429,51 +429,48 @@ export default function SimCard({ sim }) {
         
         console.log('📥 API Response:', response.data);
 
-        // Lưu orderId và bắt đầu polling
+        // Lưu orderId và tạo PayOS payment link
         if (response.data.orderId) {
           const newOrderId = response.data.orderId;
           
           console.log('✅ ORDER CREATED');
-          console.log('📥 Full response.data:', JSON.stringify(response.data, null, 2));
           console.log('🆔 ORDER ID:', newOrderId);
           
-          console.log('🔧 Calling setCurrentOrderId(' + newOrderId + ')');
-          setCurrentOrderId(newOrderId);
+          // Create PayOS payment link
+          console.log('🔷 Creating PayOS payment link...');
+          try {
+            const paymentResponse = await axios.post("http://localhost:5000/api/payment/create", {
+              orderId: newOrderId
+            });
+            
+            console.log('✅ PayOS payment link created:');
+            console.log('   - checkoutUrl:', paymentResponse.data.checkoutUrl);
+            console.log('   - qrCode:', paymentResponse.data.qrCode);
+            console.log('   - paymentLinkId:', paymentResponse.data.paymentLinkId);
+            
+            // Save state
+            setCurrentOrderId(newOrderId);
+            setPaymentStatus('PENDING');
+            
+            // Set PayOS QR code URL
+            setQrCodeUrl(paymentResponse.data.qrCode);
+            
+            // Open QR Modal
+            setShowQRModal(true);
+            setShowPurchaseModal(false);
+            
+            console.log('✅ QR Modal opened with PayOS payment link');
+            
+          } catch (paymentError) {
+            console.error('❌ Failed to create PayOS payment:', paymentError);
+            alert('Không thể tạo link thanh toán. Vui lòng thử lại!');
+          }
           
-          console.log('🔧 Calling setPaymentStatus("PENDING")');
-          setPaymentStatus('PENDING');
-          
-          // Log state sẽ được update (chưa đồng bộ ngay)
-          console.log('⏳ State sẽ được update sau render tiếp theo...');
         } else {
           console.error('⚠️ WARNING: response.data.orderId is missing!');
           console.error('Full response:', JSON.stringify(response.data, null, 2));
         }
 
-        // Sau đó hiển thị QR code
-        const bankId = "970436"; // Mã ngân hàng Vietcombank
-        const accountNo = "1025311193";
-        const accountName = "NGUYEN VO MINH THU";
-        const amount = price; // Số tiền của sim
-        const description = `MUASO${sim_number.replace(/\s/g, '')}`;
-        
-        const qrContent = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
-        
-        console.log('🔗 QR URL:', qrContent);
-        console.log('🔧 Calling setQrCodeUrl()');
-        setQrCodeUrl(qrContent);
-        
-        console.log('🔧 Calling setShowQRModal(true) - OPEN QR MODAL');
-        console.log('📊 Current state BEFORE setState:');
-        console.log('   - currentOrderId (old):', currentOrderId);
-        console.log('   - showQRModal (old):', showQRModal);
-        
-        setShowQRModal(true);
-        
-        console.log('🔧 Calling setShowPurchaseModal(false)');
-        setShowPurchaseModal(false);
-        
-        console.log('✅ All setState called - waiting for React to re-render...');
         console.log('=== QUY TRÌNH TẠO ĐƠN HOÀN TẤT ===\n');
       } catch (error) {
         console.error('\n❌❌❌ PURCHASE ERROR ❌❌❌');
@@ -915,55 +912,46 @@ export default function SimCard({ sim }) {
           {/* Header */}
           <div className="bg-gradient-to-r from-primary to-amber-500 text-white p-4 rounded-t-2xl">
             <h2 className="text-xl font-bold text-center">Quét mã QR để thanh toán</h2>
-            <p className="text-center text-xs mt-1 opacity-90">Sử dụng app ngân hàng để quét mã</p>
+            <p className="text-center text-xs mt-1 opacity-90">Sử dụng app ngân hàng để quét mã PayOS</p>
           </div>
 
           {/* Content */}
           <div className="p-4 space-y-4">
-            {/* QR Code - TO HƠN */}
+            {/* PayOS QR Code */}
             <div className="bg-white border-4 border-primary/20 rounded-xl p-2 flex justify-center items-center min-h-[320px]">
               {qrCodeUrl ? (
                 <img 
                   src={qrCodeUrl} 
-                  alt="QR Code thanh toán" 
+                  alt="PayOS QR Code thanh toán" 
                   className="w-80 h-80 object-contain"
                   onError={(e) => {
-                    console.error('QR Image load error:', e);
+                    console.error('PayOS QR Image load error:', e);
                     e.target.onerror = null;
-                    e.target.src = '/images/qrvietcombank.png'; // Fallback về ảnh tĩnh
                   }}
                 />
               ) : (
                 <div className="text-center text-gray-500">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm">Đang tạo mã QR...</p>
+                  <p className="text-sm">Đang tạo mã QR PayOS...</p>
                 </div>
               )}
             </div>
 
-            {/* Bank Info - COMPACT */}
+            {/* Payment Info */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <h4 className="font-bold text-center dark:text-white mb-2 text-sm">Thông tin chuyển khoản</h4>
+              <h4 className="font-bold text-center dark:text-white mb-2 text-sm">Thông tin thanh toán</h4>
               <div className="space-y-1.5 text-xs dark:text-gray-300">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Ngân hàng:</span>
-                  <span className="font-semibold">Vietcombank</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Số tài khoản:</span>
-                  <span className="font-semibold">1025311193</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Chủ tài khoản:</span>
-                  <span className="font-semibold"> NGUYEN VO MINH THU</span>
+                  <span className="text-gray-600 dark:text-gray-400">Số sim:</span>
+                  <span className="font-semibold">{sim_number}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Số tiền:</span>
                   <span className="font-bold text-red-500 text-sm">{formatPrice(price)}</span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-gray-600 dark:text-gray-400">Nội dung:</span>
-                  <span className="font-semibold text-right">MUA SO {sim_number.replace(/\s/g, '')}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Phương thức:</span>
+                  <span className="font-semibold">PayOS</span>
                 </div>
               </div>
             </div>
@@ -975,11 +963,11 @@ export default function SimCard({ sim }) {
                 Hướng dẫn
               </h4>
               <ol className="text-xs space-y-0.5 dark:text-gray-300 list-decimal list-inside">
-                <li>Mở app ngân hàng của bạn</li>
+                <li>Mở app ngân hàng hỗ trợ PayOS</li>
                 <li>Chọn tính năng "Quét mã QR"</li>
-                <li>Quét mã QR phía trên</li>
+                <li>Quét mã QR PayOS phía trên</li>
                 <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                <li>Hệ thống sẽ tự động cập nhật khi bạn chuyển khoản thành công</li>
+                <li>Hệ thống PayOS sẽ tự động cập nhật ngay lập tức</li>
               </ol>
             </div>
 
@@ -989,7 +977,7 @@ export default function SimCard({ sim }) {
                 <div className="h-2 w-2 bg-green-500 rounded-full"></div>
               </div>
               <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                Hệ thống đang tự động kiểm tra thanh toán mỗi 3 giây...
+                Hệ thống PayOS đang tự động kiểm tra thanh toán mỗi 3 giây...
               </p>
             </div>
 
