@@ -226,6 +226,7 @@ export default function Home() {
                 <div className="flex gap-3 mt-4">
                   <button
                     type="button"
+                    suppressHydrationWarning
                     onClick={() => {
                       setFormData(prev => ({ ...prev, purpose: '' }));
                       setPurposeSuggestions([]);
@@ -240,6 +241,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={loading}
+                    suppressHydrationWarning
                     className="flex-[2] bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}
@@ -346,6 +348,7 @@ export default function Home() {
                 <div className="flex gap-3">
                   <button
                     type="button"
+                    suppressHydrationWarning
                     onClick={() => {
                       setFormData({
                         birthDate: "",
@@ -365,6 +368,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={loading}
+                    suppressHydrationWarning
                     className="flex-[2] bg-primary hover:bg-primary-hover text-dark font-bold text-lg py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "AI phân tích"}

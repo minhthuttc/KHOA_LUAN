@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { UserPlus, Lock, User, Eye, EyeOff, Calendar } from "lucide-react";
+import { UserPlus, Lock, User, Eye, EyeOff, Calendar, Phone, MapPin } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,7 +12,9 @@ export default function RegisterPage() {
     name: "",
     password: "",
     confirmPassword: "",
-    birthDate: ""
+    birthDate: "",
+    phone: "",
+    address: ""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,7 +100,9 @@ export default function RegisterPage() {
       const res = await axios.post("http://localhost:5000/api/register", {
         name: formData.name,
         password: formData.password,
-        birthDate: formData.birthDate || null
+        birthDate: formData.birthDate || null,
+        phone: formData.phone || null,
+        address: formData.address || null
       });
 
       if (res.data.success) {
@@ -190,6 +194,42 @@ export default function RegisterPage() {
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Giúp tự động điền thông tin khi phân tích phong thủy
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold mb-2 dark:text-gray-200">
+                <Phone className="w-4 h-4" />
+                Số điện thoại (tùy chọn)
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Nhập số điện thoại"
+                className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:text-white"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Giúp tự động điền thông tin khi mua sim
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold mb-2 dark:text-gray-200">
+                <MapPin className="w-4 h-4" />
+                Địa chỉ (tùy chọn)
+              </label>
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Nhập địa chỉ nhận sim"
+                rows="2"
+                className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:text-white resize-none"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Giúp tự động điền địa chỉ khi mua sim
               </p>
             </div>
 

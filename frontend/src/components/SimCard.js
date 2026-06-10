@@ -370,11 +370,11 @@ export default function SimCard({ sim }) {
     }
 
     const user = JSON.parse(userData);
-    // Chỉ tự động điền tên, số điện thoại và địa chỉ để trống
+    // Tự động điền tên, số điện thoại và địa chỉ (nếu có)
     setPurchaseForm({
       fullName: user.name,
-      phone: "",
-      address: "",
+      phone: user.phone || "",
+      address: user.address || "",
       paymentMethod: "bank_transfer"
     });
     setShowPurchaseModal(true);

@@ -418,7 +418,7 @@ app.get('/api/admin/sim-search-stats', async (req, res) => {
 // API đăng ký
 app.post('/api/register', async (req, res) => {
   try {
-    const { name, password, birthDate } = req.body;
+    const { name, password, birthDate, phone, address } = req.body;
     
     // Kiểm tra tên đã tồn tại
     const [existing] = await pool.query('SELECT * FROM nguoi_dung WHERE ten_dang_nhap = ?', [name]);
@@ -426,10 +426,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Tên đăng nhập đã được sử dụng' });
     }
     
-    // Thêm user mới
+    // Thêm user mới (với số điện thoại và địa chỉ nếu có)
     await pool.query(
-      'INSERT INTO nguoi_dung (ten_dang_nhap, mat_khau, vai_tro, ngay_sinh) VALUES (?, ?, ?, ?)',
-      [name, password, 'customer', birthDate || null]
+      'INSERT INTO nguoi_dung (ten_dang_nhap, mat_khau, vai_tro, ngay_sinh, so_dien_thoai, dia_chi) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, password, 'customer', birthDate || null, phone || null, address || null]
     );
     
     res.json({ success: true, message: 'Đăng ký thành công' });
@@ -473,7 +473,9 @@ app.post('/api/login', async (req, res) => {
         id: user.ma_nguoi_dung,
         name: user.ten_dang_nhap,
         role: user.vai_tro,
-        birthDate: formattedBirthDate
+        birthDate: formattedBirthDate,
+        phone: user.so_dien_thoai || '',
+        address: user.dia_chi || ''
       }
     });
   } catch (error) {
