@@ -562,8 +562,9 @@ export default function AdminPage() {
         {activeTab === "users" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 dark:text-white">Danh sách User</h2>
-            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-              <table className="w-full">
+            <div className="overflow-x-auto" style={{ transform: 'rotateX(180deg)' }}>
+              <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ transform: 'rotateX(180deg)' }}>
+                <table className="w-full" style={{ minWidth: '800px' }}>
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ID</th>
@@ -636,6 +637,7 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}
@@ -643,11 +645,10 @@ export default function AdminPage() {
         {activeTab === "purchases" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử mua Sim</h2>
-            {/* Wrapper với scrollbar ở trên */}
-            <div className="overflow-x-auto" style={{ transform: 'rotateX(180deg)' }}>
-              <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ transform: 'rotateX(180deg)' }}>
-                <table className="w-full" style={{ minWidth: '1400px' }}>
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+            {/* Container với thanh lướt ngang và dọc */}
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto bg-white dark:bg-dark-lighter rounded-xl border border-gray-200 dark:border-gray-700">
+              <table className="w-full" style={{ minWidth: '1400px' }}>
+                  <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tài khoản</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số Sim</th>
@@ -655,10 +656,9 @@ export default function AdminPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Giá</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên KH</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SĐT KH</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">TT Thanh toán</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">PT Thanh toán</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ngày mua</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
                   </tr>
                 </thead>
@@ -682,47 +682,72 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap inline-block text-center ${
-                            purchase.payment_status === 'PAID' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : purchase.payment_status === 'FAILED'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          }`}>
-                            {purchase.payment_status === 'PAID' ? '✓ Đã thanh toán' : purchase.payment_status === 'FAILED' ? '✗ Thất bại' : '⏳ Chờ thanh toán'}
-                          </span>
-                          {purchase.paid_at && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {new Date(purchase.paid_at).toLocaleString('vi-VN')}
-                            </span>
-                          )}
+                          {/* Hiển thị trạng thái tổng hợp */}
+                          {(() => {
+                            // Nếu có transaction_id => Đã chuyển khoản thành công
+                            if (purchase.transaction_id && purchase.payment_method === 'bank_transfer') {
+                              return (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                  Đã chuyển khoản - {purchase.status || 'Chờ duyệt'}
+                                </span>
+                              );
+                            }
+                            // Nếu thanh toán thất bại
+                            if (purchase.payment_status === 'FAILED') {
+                              return (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                  Thanh toán thất bại
+                                </span>
+                              );
+                            }
+                            // Nếu đã hủy
+                            if (purchase.status === 'Đã hủy') {
+                              return (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                  Đã hủy
+                                </span>
+                              );
+                            }
+                            // Nếu đã duyệt
+                            if (purchase.status === 'Đã duyệt') {
+                              // COD đã duyệt
+                              if (purchase.payment_method === 'cod') {
+                                return (
+                                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                    Đã duyệt - Chưa thanh toán
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                  Đã duyệt
+                                </span>
+                              );
+                            }
+                            // Mặc định: Chờ duyệt
+                            if (purchase.payment_method === 'cod') {
+                              return (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  Chưa thanh toán - Chờ duyệt
+                                </span>
+                              );
+                            }
+                            // Chuyển khoản chưa thanh toán
+                            return (
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                Chờ chuyển khoản
+                              </span>
+                            );
+                          })()}
                           {purchase.transaction_id && (
                             <span className="text-xs text-gray-400 dark:text-gray-500">
-                              GD: {purchase.transaction_id}
+                              GD: {purchase.transaction_id.substring(0, 8)}...
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap dark:text-white text-sm">
                         {new Date(purchase.purchase_date).toLocaleString('vi-VN')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                            purchase.status === 'Đã duyệt' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : purchase.status === 'Đã hủy'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          }`}>
-                            {purchase.status || 'Chờ duyệt'}
-                          </span>
-                          {purchase.approval_date && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                              {new Date(purchase.approval_date).toLocaleString('vi-VN')}
-                            </span>
-                          )}
-                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {purchase.status === 'Chờ duyệt' && (
@@ -795,7 +820,6 @@ export default function AdminPage() {
                   Chưa có lịch sử mua sim
                 </div>
               )}
-              </div>
             </div>
           </div>
         )}
@@ -803,8 +827,9 @@ export default function AdminPage() {
         {activeTab === "fengshui" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử xem Phong Thủy</h2>
-            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-              <table className="w-full">
+            <div className="overflow-x-auto" style={{ transform: 'rotateX(180deg)' }}>
+              <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ transform: 'rotateX(180deg)' }}>
+                <table className="w-full" style={{ minWidth: '1200px' }}>
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Người xem</th>
@@ -849,6 +874,7 @@ export default function AdminPage() {
                   Chưa có lịch sử xem phong thủy
                 </div>
               )}
+              </div>
             </div>
           </div>
         )}
@@ -856,8 +882,9 @@ export default function AdminPage() {
         {activeTab === "recommendations" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 dark:text-white">Lịch sử phân tích nhu cầu AI</h2>
-            <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto" style={{ transform: 'rotateX(180deg)' }}>
+              <div className="bg-white dark:bg-dark-lighter rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ transform: 'rotateX(180deg)' }}>
+                <table className="w-full" style={{ minWidth: '1300px' }}>
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Người dùng</th>
@@ -906,6 +933,7 @@ export default function AdminPage() {
                   Chưa có lịch sử phân tích nhu cầu
                 </div>
               )}
+              </div>
             </div>
           </div>
         )}

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { User, LogOut } from "lucide-react";
 
 export default function Header() {
   const [user, setUser] = useState(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Load user từ localStorage khi component mount

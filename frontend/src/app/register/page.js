@@ -129,8 +129,9 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white dark:bg-dark-lighter rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-[600px] overflow-y-auto">
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
                 {error}
@@ -299,6 +300,7 @@ export default function RegisterPage() {
                 Đăng nhập ngay
               </Link>
             </p>
+          </div>
           </div>
         </div>
       </div>

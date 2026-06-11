@@ -208,8 +208,8 @@ app.post('/api/recommend', async (req, res) => {
 // API endpoint to get all sims
 app.get('/api/sims', async (req, res) => {
   try {
-    // Lấy tất cả sim, bao gồm cả sim đã bán
-    const [rows] = await pool.query('SELECT * FROM the_sim ORDER BY gia_ban ASC');
+    // Chỉ lấy sim còn hàng (không bao gồm sim đã bán)
+    const [rows] = await pool.query('SELECT * FROM the_sim WHERE trang_thai = ? ORDER BY gia_ban ASC', ['Còn hàng']);
     
     // Thêm suitabilityScore mặc định cho kho sim
     const simsWithScore = rows.map(sim => ({
@@ -608,6 +608,11 @@ app.put('/api/admin/purchases/:id/status', async (req, res) => {
       'UPDATE don_hang SET trang_thai = ?, ngay_duyet = NOW() WHERE ma_don_hang = ?', 
       [status, id]
     );
+    
+    // Nếu duyệt đơn, cập nhật sim thành "Đã bán"
+    if (status === 'Đã duyệt') {
+      await pool.query('UPDATE the_sim SET trang_thai = ? WHERE so_sim = ?', ['Đã bán', purchase.so_sim]);
+    }
     
     // Nếu hủy đơn, trả sim về kho (status = "Còn hàng")
     if (status === 'Đã hủy') {

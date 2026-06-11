@@ -21,6 +21,11 @@ export default function SimCard({ sim }) {
     address: "",
     paymentMethod: "bank_transfer"
   });
+  const [useCustomInfo, setUseCustomInfo] = useState({
+    name: false,
+    phone: false,
+    address: false
+  });
   const [loading, setLoading] = useState(false);
 
   // Debug useEffect - Log mỗi khi state thay đổi
@@ -741,10 +746,27 @@ export default function SimCard({ sim }) {
                   type="text"
                   value={purchaseForm.fullName}
                   onChange={(e) => setPurchaseForm({...purchaseForm, fullName: e.target.value})}
+                  disabled={!useCustomInfo.name}
                   required
-                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                   placeholder="Nhập họ và tên"
                 />
+                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCustomInfo.name}
+                    onChange={(e) => {
+                      setUseCustomInfo({...useCustomInfo, name: e.target.checked});
+                      if (!e.target.checked) {
+                        // Reset về thông tin mặc định
+                        const userData = JSON.parse(localStorage.getItem("user") || "{}");
+                        setPurchaseForm({...purchaseForm, fullName: userData.name || ""});
+                      }
+                    }}
+                    className="w-4 h-4 text-primary focus:ring-primary"
+                  />
+                  Sử dụng tên người nhận khác
+                </label>
               </div>
 
               <div>
@@ -756,10 +778,26 @@ export default function SimCard({ sim }) {
                   type="tel"
                   value={purchaseForm.phone}
                   onChange={(e) => setPurchaseForm({...purchaseForm, phone: e.target.value})}
+                  disabled={!useCustomInfo.phone}
                   required
-                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
                   placeholder="Nhập số điện thoại"
                 />
+                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCustomInfo.phone}
+                    onChange={(e) => {
+                      setUseCustomInfo({...useCustomInfo, phone: e.target.checked});
+                      if (!e.target.checked) {
+                        const userData = JSON.parse(localStorage.getItem("user") || "{}");
+                        setPurchaseForm({...purchaseForm, phone: userData.phone || ""});
+                      }
+                    }}
+                    className="w-4 h-4 text-primary focus:ring-primary"
+                  />
+                  Sử dụng số điện thoại khác
+                </label>
               </div>
 
               <div>
@@ -770,11 +808,27 @@ export default function SimCard({ sim }) {
                 <textarea
                   value={purchaseForm.address}
                   onChange={(e) => setPurchaseForm({...purchaseForm, address: e.target.value})}
+                  disabled={!useCustomInfo.address}
                   required
                   rows="3"
-                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
+                  className="w-full bg-white dark:bg-dark border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed resize-none"
                   placeholder="Nhập địa chỉ nhận sim"
                 />
+                <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCustomInfo.address}
+                    onChange={(e) => {
+                      setUseCustomInfo({...useCustomInfo, address: e.target.checked});
+                      if (!e.target.checked) {
+                        const userData = JSON.parse(localStorage.getItem("user") || "{}");
+                        setPurchaseForm({...purchaseForm, address: userData.address || ""});
+                      }
+                    }}
+                    className="w-4 h-4 text-primary focus:ring-primary"
+                  />
+                  Sử dụng địa chỉ khác
+                </label>
               </div>
 
               <div>
