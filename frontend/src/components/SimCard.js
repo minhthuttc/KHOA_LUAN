@@ -814,8 +814,8 @@ export default function SimCard({ sim }) {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <h4 className="font-semibold mb-2 dark:text-white">Thông tin chuyển khoản:</h4>
                   <div className="space-y-1 text-sm dark:text-gray-300">
-                    <p><strong>Ngân hàng:</strong> Vietcombank</p>
-                    <p><strong>Số tài khoản:</strong> 1025311193</p>
+                    <p><strong>Ngân hàng:</strong> MB Bank</p>
+                    <p><strong>Số tài khoản:</strong> 0382286177</p>
                     <p><strong>Chủ tài khoản:</strong> NGUYEN VO MINH THU</p>
                     <p><strong>Nội dung:</strong> MUA SỐ: {sim_number}</p>
                   </div>
