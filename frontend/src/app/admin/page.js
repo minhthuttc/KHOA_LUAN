@@ -432,9 +432,9 @@ export default function AdminPage() {
             {/* Thống kê tổng quát */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* Biểu đồ theo nhà mạng */}
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-6 border-2 border-orange-200 dark:border-orange-800 shadow-lg hover:shadow-xl transition-shadow">
+                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
                   Sim theo nhà mạng
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -443,19 +443,33 @@ export default function AdminPage() {
                     sims.forEach(s => { counts[s.network] = (counts[s.network] || 0) + 1; });
                     return Object.entries(counts).map(([name, value]) => ({ name, value }));
                   })()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip formatter={(value) => [`${value} sim`, 'Số lượng']} />
-                    <Bar dataKey="value" fill="#d97706" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f59e0b" opacity={0.2} />
+                    <XAxis dataKey="name" stroke="#ea580c" fontWeight="600" />
+                    <YAxis allowDecimals={false} stroke="#ea580c" />
+                    <Tooltip 
+                      formatter={(value) => [`${value} sim`, 'Số lượng']}
+                      contentStyle={{
+                        backgroundColor: '#fff7ed',
+                        border: '2px solid #fb923c',
+                        borderRadius: '8px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                    <Bar dataKey="value" fill="url(#orangeGradient)" radius={[8, 8, 0, 0]} />
+                    <defs>
+                      <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f97316" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#fb923c" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Biểu đồ theo mệnh */}
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-6 border-2 border-emerald-200 dark:border-emerald-800 shadow-lg hover:shadow-xl transition-shadow">
+                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-emerald-600" />
                   Sim theo mệnh
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -464,25 +478,39 @@ export default function AdminPage() {
                     sims.forEach(s => { counts[s.feng_shui_element] = (counts[s.feng_shui_element] || 0) + 1; });
                     return Object.entries(counts).map(([name, value]) => ({ name, value }));
                   })()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip formatter={(value) => [`${value} sim`, 'Số lượng']} />
-                    <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#10b981" opacity={0.2} />
+                    <XAxis dataKey="name" stroke="#059669" fontWeight="600" />
+                    <YAxis allowDecimals={false} stroke="#059669" />
+                    <Tooltip 
+                      formatter={(value) => [`${value} sim`, 'Số lượng']}
+                      contentStyle={{
+                        backgroundColor: '#ecfdf5',
+                        border: '2px solid #34d399',
+                        borderRadius: '8px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                    <Bar dataKey="value" fill="url(#greenGradient)" radius={[8, 8, 0, 0]} />
+                    <defs>
+                      <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#34d399" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Biểu đồ sim được xem nhiều nhất */}
-              <div className="bg-white dark:bg-dark-lighter rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
+              <div className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl p-6 border-2 border-rose-200 dark:border-rose-800 shadow-lg hover:shadow-xl transition-shadow">
+                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-rose-600" />
                   Sim được xem nhiều nhất (Top 20)
                 </h3>
                 {searchStats.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={searchStats.slice(0, 20)}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f43f5e" opacity={0.2} />
                       <XAxis 
                         dataKey="sim_number" 
                         tick={{ fontSize: 9 }} 
@@ -490,13 +518,27 @@ export default function AdminPage() {
                         textAnchor="end" 
                         height={70}
                         interval={0}
+                        stroke="#e11d48"
+                        fontWeight="600"
                       />
-                      <YAxis allowDecimals={false} />
+                      <YAxis allowDecimals={false} stroke="#e11d48" />
                       <Tooltip 
                         formatter={(value) => [`${value} lượt`, 'Số lần xem']}
                         labelFormatter={(label) => `Sim: ${label}`}
+                        contentStyle={{
+                          backgroundColor: '#fff1f2',
+                          border: '2px solid #fb7185',
+                          borderRadius: '8px',
+                          fontWeight: 'bold'
+                        }}
                       />
-                      <Bar dataKey="search_count" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="search_count" fill="url(#redGradient)" radius={[8, 8, 0, 0]} />
+                      <defs>
+                        <linearGradient id="redGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f43f5e" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#fb7185" stopOpacity={0.8} />
+                        </linearGradient>
+                      </defs>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (

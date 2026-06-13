@@ -50,10 +50,7 @@ export default function ContactPage() {
       {/* Hero Section */}
       <div className="bg-primary text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>
-          <p className="text-xl text-white/90">
-            Chúng tôi luôn sẵn sàng hỗ trợ bạn tìm được sim số đẹp ưng ý
-          </p>
+          <h1 className="text-4xl md:text-5xl font-bold">Liên Hệ Với Chúng Tôi</h1>
         </div>
       </div>
 
